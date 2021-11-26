@@ -1,13 +1,12 @@
+from validator import ValidatorFI
+from cryptography import Cryptography
+from config import configs
+from client import Client
 import os
 import shutil
 import sys
 
 sys.path.append('../config')
-
-from client import Client
-from config import configs
-from cryptography import Cryptography
-from validator import ValidatorFI
 
 
 class RunDiemBFT(process):
