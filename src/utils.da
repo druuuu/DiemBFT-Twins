@@ -29,3 +29,13 @@ def todict(obj):
         return [todict(elem) for elem in obj]
     else:
         return obj
+
+
+def getObjectFromPath(d: dict, *path):
+    curr_dict = d
+    for part in path:
+        if part in curr_dict:
+            curr_dict = curr_dict[part]
+        else:
+            return None
+    return curr_dict
