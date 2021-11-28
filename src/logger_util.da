@@ -17,8 +17,8 @@ class LOGGER:
             other_proc = "ALL validators"
         elif proc in LOGGER.replicas:
             other_proc = "validator_" + str(LOGGER.replicas.index(proc))
-        elif proc in LOGGER.clients:
-            other_proc = "client_" + str(LOGGER.clients.index(proc))
+        # elif proc in LOGGER.clients:
+            # other_proc = "client_" + str(LOGGER.clients.index(proc))
         else:
             other_proc = "parent_process"
 
@@ -57,14 +57,14 @@ class LOGGER:
         f.close()
 
     def log(funcname, *params): pass
-        # timestamp = datetime.datetime.now()
-        # f = open(LOGGER.filename, 'a+')
-        # p_list = []
-        # for p in params:
-        #     if p != None and hasattr(p, '__dict__'):
-        #         p = p.__dict__
-        #     p_list.append(p)
+    # timestamp = datetime.datetime.now()
+    # f = open(LOGGER.filename, 'a+')
+    # p_list = []
+    # for p in params:
+    #     if p != None and hasattr(p, '__dict__'):
+    #         p = p.__dict__
+    #     p_list.append(p)
 
-        # print(timestamp, LOGGER.process_id,
-        #       funcname, p_list, file=f)
-        # f.close()
+    # print(timestamp, LOGGER.process_id,
+    #       funcname, p_list, file=f)
+    # f.close()

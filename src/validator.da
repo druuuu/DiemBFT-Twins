@@ -16,11 +16,11 @@ from safety import Safety
 
 class Validator (process):
 
-    def setup(config, config_id: int, validator_id: int, replicas: list, clients: list, private_key, public_keys_validators, public_keys_clients):
+    def setup(config, config_id: int, validator_id: int, replicas: list,  private_key, public_keys_validators, leaders):
 
         LOGGER.replicas = replicas
         LOGGER.process_id = "validator_" + str(validator_id)
-        LOGGER.clients = clients
+        # LOGGER.clients = clients
         LOGGER.filename = '../logs/config' + str(config_id) + '/' \
             + LOGGER.process_id + ".log"
 
@@ -183,7 +183,8 @@ class Validator (process):
             '''if P.block.round 6= round ∨ P.sender 6= leader ∨ P.block.author 6= leader then
                     return'''
             if proposal_msg.block.round != round or replicas[proposal_msg.sender] != leader or replicas[proposal_msg.block.author] != leader:
-                LOGGER.log("ROUND PROPOSAL EARLY EXIT", proposal_msg.block.round, round, replicas[proposal_msg.sender], leader)
+                LOGGER.log("ROUND PROPOSAL EARLY EXIT", proposal_msg.block.round,
+                           round, replicas[proposal_msg.sender], leader)
                 return
 
             if p != replicas[validator_id]:

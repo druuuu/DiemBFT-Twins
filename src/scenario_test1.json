@@ -1,0 +1,15 @@
+{
+    "scenarios" : 
+    [
+        {
+            "number_of_nodes":4,
+            "number_of_twins":1,
+            "scenario":{
+                "leaders":[1,2,3],
+                "proposal_partitions":[[[1,2,3],[4,5]], [[1,3,4],[2,5]],[[1,2,3],[4,5]]],
+                "vote_partitions":[[[1,2,3],[4,5]], [[1,3,4],[2,5]],[[1,2,3],[4,5]]],
+                "timeout_partitions":[[[1,2,3],[4,5]], [[1,3,4],[2,5]],[[1,2,3],[4,5]]]
+            }
+        }
+    ]
+}
