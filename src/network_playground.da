@@ -5,7 +5,8 @@ from object_types import MsgType
 
 class NetworkPlayground(process):
     def setup(number_of_nodes: int, number_of_twins: int, scenario, scenario_number_mapping, node_to_twin, twin_to_node):
-        self.rounds = len(getObjectFromPath(scenario, 'partitions'))
+        # self.rounds = len(getObjectFromPath(scenario, 'partitions'))
+        self.rounds = len(scenario['leaders'])
         self.commit_config = dict()
         self.scenario_number_mapping = scenario_number_mapping
         self.done_flag = False
@@ -68,7 +69,7 @@ class NetworkPlayground(process):
         for node_num in node_nums_to_send:
             node_pids.append(getObjectFromPath(
                 self.scenario_number_mapping, node_num))
-        send(msg, sender=sender, to=node_pids)
+        # send((msg, sender), to=node_pids)
 
     ##########################################################
 
@@ -116,7 +117,7 @@ class NetworkPlayground(process):
 
         ''' if msg_round exceeds even the over estimated round, ignore '''
         if msg_round > self.rounds + 3:
-            send('Quit process', msg_sender, to=self.scenario_executor)
+            send(('Quit process', msg_sender), to=parent())
             return
 
         ''' When current round is after self.rounds, there is only one partition with all the nodes '''
@@ -195,11 +196,16 @@ class NetworkPlayground(process):
     ##########################################################
 
     def run():
+        output("Network playground running")
         # start timer here? or in setup itself?
         while not self.done_flag:
             # receive what messages exactly?
-            if await(receive(msg, destinations)):
-                pass
-            elif timeout(6):
-                output("Liveness violated")
-                done_flag = True
+
+            if await(received(('Done',), from_=parent())):
+                self.done_flag = True
+
+            # if await(receive(msg, destinations)):
+            #     pass
+            # elif timeout(6):
+            #     output("Liveness violated")
+            #     done_flag = True

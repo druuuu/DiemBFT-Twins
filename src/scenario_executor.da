@@ -2,7 +2,7 @@
 from config import configs
 import sys
 import json
-from validator import ValidatorFI
+from validator import Validator
 from cryptography import Cryptography
 from network_playground import NetworkPlayground
 import os
@@ -51,8 +51,8 @@ class ScenarioExecutor(process):
         output(nTwins)
         output(current_scenario)
 
-        validators = new(ValidatorFI, num=nValidators)
-        twins = None
+        validators = new(Validator, num=nValidators)
+        # twins = None
         # Create network playground object
         networkPlayground = new(NetworkPlayground, num=1)
 
@@ -69,26 +69,26 @@ class ScenarioExecutor(process):
                               leaders))
 
         # Define create_twins funtion
-        def create_twins():
-            twins = new(ValidatorFI, num=nTwins)
-            for personal_id, twin in enumerate(twins):
-                setup(twin, (config, config_id, personal_id, list(validators), validator_private_keys[personal_id], validator_public_keys,
-                             leaders))
-                twin_to_node[personal_id+nValidators] = personal_id
-                node_to_twin[personal_id] = personal_id+nValidators
-                scenario_number_mapping[personal_id+nValidators] = twin
+        # def create_twins():
+        twins = new(Validator, num=nTwins)
+        for personal_id, twin in enumerate(twins):
+            setup(twin, (config, config_id, personal_id, list(validators), validator_private_keys[personal_id], validator_public_keys,
+                         leaders))
+            twin_to_node[personal_id+nValidators] = personal_id
+            node_to_twin[personal_id] = personal_id+nValidators
+            scenario_number_mapping[personal_id+nValidators] = twin
 
         # Create the twins
-        create_twins()
+        # create_twins()
 
         # Setup network_playground
         setup(networkPlayground, (nValidators, nTwins, current_scenario,
                                   scenario_number_mapping, node_to_twin, twin_to_node))
-
+        output(twins)
         # Start all processes
-        start(networkPlayground)
-        start(validators)
-        start(twins)
+        start(networkPlayground | twins | validators)
+        # start(twins)
+        # start(validators)
 
         # TODO: await all process have been ended
         # TODO: send 'Done' to network_playground

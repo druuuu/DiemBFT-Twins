@@ -17,7 +17,7 @@ from safety import Safety
 class Validator (process):
 
     def setup(config, config_id: int, validator_id: int, replicas: list,  private_key, public_keys_validators, leaders):
-
+        output("Validator with id ", validator_id)
         LOGGER.replicas = replicas
         LOGGER.process_id = "validator_" + str(validator_id)
         # LOGGER.clients = clients
@@ -41,8 +41,8 @@ class Validator (process):
             validator_id, replicas, self.blocktree, self.safety, config['nfaulty'], config['delta'], send_timeout_msg)
         self.mempool = MemPool(validator_id)
         self.leader_election = LeaderElection(
-            validator_id, replicas, self.ledger, self.pacemaker, config['window_size'], config['exclude_size'])
-
+            validator_id, replicas, self.ledger, self.pacemaker, config['window_size'], config['exclude_size'], leaders)
+        self.replicas = replicas
         Cryptography.private_key = self.private_key
         Cryptography.replicas = self.replicas
         Cryptography.public_keys_validators = self.public_keys_validators
@@ -71,8 +71,10 @@ class Validator (process):
 
     '''Procedure start event processing(M)'''
     def run():
+        output("Starting node")
         self.pacemaker.start_timer(1)
         LOGGER.log(replicas[validator_id])
+        process_new_round_event(None)
         await(received(('Done',), from_=parent()))
         self.pacemaker.stop_timer(self.pacemaker.current_round)
         output("Validator", self.validator_id, "is exiting")
@@ -101,7 +103,8 @@ class Validator (process):
             self.recently_committed_block_ids.clear()
 
         '''LeaderElection.update leaders(qc)'''
-        self.leader_election.update_leaders(qc)
+        # no need to update leaders
+        # self.leader_election.update_leaders(qc)
 
         '''Pacemaker.advance round(qc.vote info.round)'''
         self.pacemaker.advance_round_qc(qc)
@@ -111,11 +114,13 @@ class Validator (process):
     '''Procedure process new round event(last tc)'''
     def process_new_round_event(last_tc):
         LOGGER.log('Validator: process_new_round_event', last_tc)
-
+        output(self.leader_election.get_leader(self.pacemaker.current_round))
+        output("reached here")
         '''if u = LeaderElection.get leader(Pacemaker.current round) then'''
-        if self.replicas[validator_id] == self.leader_election.get_leader(self.pacemaker.current_round):
-
+        # if self.replicas[validator_id] == self.leader_election.get_leader(self.pacemaker.current_round):
+        if validator_id == self.leader_election.get_leader(self.pacemaker.current_round):
             # Check if there are any transactions in the MemPool
+            output("I am leader")
             if self.mempool.peek_pool() == 0:
                 self.should_start_new_round = True
                 prev_block = self.id_block[self.blocktree.high_qc.vote_info.id]
