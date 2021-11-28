@@ -39,33 +39,21 @@ class NetworkPlayground(process):
 
     ''' returns the round number of message based on message type (proposal | vote | timeout) '''
     def get_msg_round(msg, msg_type):
-        # msg_type = self.get_msg_type(msg)
-        switch(msg_type) {
-            case MsgType.Proposal:
-                return msg.block.round
-                break
-            case MsgType.Vote:
-                return msg.vote_info.round
-                break
-            case MsgType.Timeout:
-                return msg.tmo_info.round
-                break
-        }
+        if msg_type == MsgType.Proposal:
+            return msg.block.round
+        elif msg_type == MsgType.Vote:
+            return msg.vote_info.round
+        elif msg_type == MsgType.Timeout:
+            return msg.tmo_info.round
 
     ''' return partitions for all rounds for given msg type '''
     def get_partitions_for_msg_type(msg_type):
-        # msg_type = self.get_msg_type(msg)
-        switch(msg_type) {
-            case MsgType.Proposal:
-                return getObjectFromPath(self.scenario, 'proposal_partitions')
-                break
-            case MsgType.Vote:
-                return getObjectFromPath(self.scenario, 'vote_partitions')
-                break
-            case MsgType.Timeout:
-                return getObjectFromPath(self.scenario, 'timeout_partitions')
-                break
-        }
+        if msg_type == MsgType.Proposal:
+            return getObjectFromPath(self.scenario, 'proposal_partitions')
+        elif msg_type == MsgType.Vote:
+            return getObjectFromPath(self.scenario, 'vote_partitions')
+        elif msg_type == MsgType.Timeout:
+            return getObjectFromPath(self.scenario, 'timeout_partitions')
     
     ''' return partition for given round in which node p is present '''
     def get_partition(partitions_in_round, node):
