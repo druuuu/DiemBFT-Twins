@@ -68,17 +68,15 @@ class NetworkPlayground(process):
         for node_num in node_nums_to_send:
             node_pids.append(getObjectFromPath(
                 self.node_number_to_pid_mapping, node_num))
-        send((msg_name, msg, sender), to=node_pids)
-        output("PROPOSAL SEND")
+        if node_pids:
+            output("sending ", msg_name, " to ", node_pids, "from ", sender)
+            send((msg_name, msg, sender), to=node_pids)
 
     ##########################################################
 
     ##################   Receive Handlers   ##################
 
     def receive(msg=('Proposal', proposal_msg), from_=msg_sender):
-        output("Received proposal from ", msg_sender)
-        output(self.node_number_to_pid_mapping)
-        output("--------", msg_sender)
 
         msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
 
@@ -113,7 +111,6 @@ class NetworkPlayground(process):
         # get all nodes in partition to form list_of_validators_to_send_to
         destination_nodes = self.get_partition(
             all_partitions, msg_sender_number)
-        output(destination_nodes)
         # sender node will be updated if it is a twin
         actual_sender_node = self.replace_with_twin_if_needed(
             msg_sender_number)
@@ -122,7 +119,6 @@ class NetworkPlayground(process):
                            proposal_msg, actual_sender_node)
 
     def receive(msg=('Vote', vote_msg, destination_node_num), from_=msg_sender):
-
         msg_round = self.get_msg_round(vote_msg, MsgType.Vote)
         destination_nodes = set()
         msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
@@ -152,7 +148,6 @@ class NetworkPlayground(process):
         # get all nodes in partition
         node_nums_in_partition = get_partition(
             all_partitions, msg_sender_number)
-        output("node_nums_in_partition", node_nums_in_partition)
         # if destination node of msg is present in the same partition
         if destination_node_num in node_nums_in_partition:
             # add this node to final list of destination nodes
