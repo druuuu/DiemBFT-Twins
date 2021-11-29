@@ -43,7 +43,8 @@ class ScenarioExecutor(process):
 
         validator_private_keys = {}
         validator_public_keys = {}
-        scenario_number_mapping = {}
+        node_number_to_pid_mapping = {}
+        pid_to_node_number_mapping = {}
         twin_to_node = {}
         node_to_twin = {}
 
@@ -61,7 +62,8 @@ class ScenarioExecutor(process):
             private_key, public_key = Cryptography.generate_key()
             validator_private_keys[personal_id] = private_key
             validator_public_keys[personal_id] = public_key
-            scenario_number_mapping[personal_id] = validator
+            node_number_to_pid_mapping[personal_id] = validator
+            pid_to_node_number_mapping[validator] = personal_id
 
         # Setup the non-faulty validators
         for personal_id, validator in enumerate(validators):
@@ -76,14 +78,15 @@ class ScenarioExecutor(process):
                          leaders, networkPlayground))
             twin_to_node[personal_id+nValidators] = personal_id
             node_to_twin[personal_id] = personal_id+nValidators
-            scenario_number_mapping[personal_id+nValidators] = twin
+            node_number_to_pid_mapping[personal_id+nValidators] = twin
+            pid_to_node_number_mapping[twin] = personal_id+nValidators
 
         # Create the twins
         # create_twins()
 
         # Setup network_playground
         setup(networkPlayground, (nValidators, nTwins, current_scenario,
-                                  scenario_number_mapping, node_to_twin, twin_to_node))
+                                  node_number_to_pid_mapping, pid_to_node_number_mapping, node_to_twin, twin_to_node))
         output(twins)
         # Start all processes
         start(networkPlayground | twins | validators)
