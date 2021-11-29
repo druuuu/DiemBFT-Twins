@@ -30,16 +30,6 @@ class NetworkPlayground(process):
     def get_twin(node_num):
         return getObjectFromPath(self.node_to_twin, node_num)
 
-    ''' returns the type of message(proposal | vote | timeout), given message as input '''
-    def get_msg_type(msg):
-        # TODO
-        pass
-
-    ''' returns the destination to which the message is supposed to be sent, given message as input '''
-    def get_msg_destination(msg):
-        # TODO: check
-        return msg.destination
-
     ''' returns the round number of message based on message type (proposal | vote | timeout) '''
     def get_msg_round(msg, msg_type):
         if msg_type == MsgType.Proposal:
@@ -122,8 +112,6 @@ class NetworkPlayground(process):
 
         ''' When msg_round <= rounds, create partitions according to the scenario '''
         # get all nodes in partition to form list_of_validators_to_send_to
-        # TODO: destination nodes is empty
-        # Mapping failing
         destination_nodes = self.get_partition(all_partitions, msg_sender_number)
         output(destination_nodes)
         # sender node will be updated if it is a twin
@@ -149,8 +137,6 @@ class NetworkPlayground(process):
             # no notion of partitions in this round, i.e. all nodes present in the same partition
 
             ''' unicast message to destination node of msg '''
-            # destination_node_num = self.get_msg_destination(msg)
-            # destination_node_num = vote_rcvr_number 
             destination_nodes.append(destination_node_num)
 
             ''' If destination node has twin, then message should be sent to twin as well '''
