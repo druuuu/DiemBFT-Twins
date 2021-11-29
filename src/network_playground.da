@@ -69,6 +69,7 @@ class NetworkPlayground(process):
             node_pids.append(getObjectFromPath(
                 self.node_number_to_pid_mapping, node_num))
         send((msg_name, msg, sender), to=node_pids)
+        output("PROPOSAL SEND")
 
     ##########################################################
 
@@ -85,7 +86,6 @@ class NetworkPlayground(process):
         # get partitions for current message type and round
         all_partitions = self.get_partitions_for_msg_type(MsgType.Proposal)[
             msg_round]
-        output(msg_round, all_partitions)
 
         ''' if msg_round exceeds even the over estimated round, ignore '''
         if msg_round > self.rounds + 3:
@@ -118,13 +118,16 @@ class NetworkPlayground(process):
         actual_sender_node = self.replace_with_twin_if_needed(
             msg_sender_number)
         # send msg to all nodes in partition with the correct sender_node
-        self.send_to_nodes('Proposal', destination_nodes, proposal_msg, actual_sender_node)
+        self.send_to_nodes('Proposal', destination_nodes,
+                           proposal_msg, actual_sender_node)
 
     def receive(msg=('Vote', vote_msg, destination_node_num), from_=msg_sender):
-        msg_round = self.get_msg_round(msg, MsgType.Vote)
+
+        msg_round = self.get_msg_round(vote_msg, MsgType.Vote)
         destination_nodes = set()
         msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
-
+        all_partitions = self.get_partitions_for_msg_type(MsgType.Vote)[
+            msg_round]
         ''' if msg_round exceeds even the over estimated round, ignore '''
         if msg_round > self.rounds + 3:
             send(('Quit process', msg_sender_number), to=parent())
@@ -141,14 +144,15 @@ class NetworkPlayground(process):
             if self.get_twin(destination_node_num) is not None:
                 destination_nodes.append(self.get_twin(destination_node_num))
 
-            self.send_to_nodes('Vote', destination_nodes, vote_msg, actual_sender_node)
+            self.send_to_nodes('Vote', destination_nodes,
+                               vote_msg, actual_sender_node)
             return
 
         ''' unicast message to destination node of msg '''
         # get all nodes in partition
         node_nums_in_partition = get_partition(
             all_partitions, msg_sender_number)
-
+        output("node_nums_in_partition", node_nums_in_partition)
         # if destination node of msg is present in the same partition
         if destination_node_num in node_nums_in_partition:
             # add this node to final list of destination nodes
@@ -163,7 +167,8 @@ class NetworkPlayground(process):
             msg_sender_number)
 
         # send msg to all destination nodes in partition with the correct sender_node
-        self.send_to_nodes('Vote', destination_nodes, vote_msg, actual_sender_node)
+        self.send_to_nodes('Vote', destination_nodes,
+                           vote_msg, actual_sender_node)
 
     def receive(msg=('Timeout', timeout_msg), from_=msg_sender):
         msg_round = self.get_msg_round(msg, MsgType.Timeout)
@@ -204,14 +209,12 @@ class NetworkPlayground(process):
             msg_sender_number)
 
         # send msg to all nodes in partition with the correct sender_node
-        self.send_to_nodes('Timeout', destination_nodes, timeout_msg, actual_sender_node)
-
-
+        self.send_to_nodes('Timeout', destination_nodes,
+                           timeout_msg, actual_sender_node)
 
     # def receive(msg=('Done',), from_=scenario_executor):
     #     self.send_to_nodes()
     #     pass
-
 
     ##########################################################
 

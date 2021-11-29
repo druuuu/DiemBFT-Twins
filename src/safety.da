@@ -115,7 +115,8 @@ class Safety:
         self.__highest_vote_round = value
 
     '''Function make vote(b, last tc)'''
-    #Creates vote message containing vote_info, and ledger_commit_info if valid
+    # Creates vote message containing vote_info, and ledger_commit_info if valid
+
     def make_vote(self, block, last_tc):
         LOGGER.log('Safety: make_vote', block, last_tc)
         if block.qc is None:
@@ -125,9 +126,11 @@ class Safety:
             '''qc round ← b.qc.vote info.round'''
             qc_round = block.qc.vote_info.round
             qc_block_id = block.qc.vote_info.id
+
         '''if valid signatures(b, last tc) ∧ safe to vote(b.round, qc round, last tc) then'''
         if Cryptography.valid_signatures(last_tc) and Cryptography.valid_signatures(block) and self.__safe_to_vote(block.round, qc_round, last_tc):
             '''update highest qc round(qc round) // Protect qc round'''
+
             self.__update_highest_qc_round(qc_round)
             '''increase highest vote round(b.round) // Don’t vote again in this (or lower) round'''
             self.__increase_highest_vote_round(block.round)
@@ -165,7 +168,8 @@ class Safety:
         return None
 
     '''Function make timeout(round, high qc, last tc)'''
-    #Verify signatures and tmo_signatures in QC & TC, and Create appropriate TimeoutInfo object 
+    # Verify signatures and tmo_signatures in QC & TC, and Create appropriate TimeoutInfo object
+
     def make_timeout(self, round, high_qc, last_tc):
         LOGGER.log('Safety: make_timeout', round, high_qc, last_tc)
         if high_qc is None:

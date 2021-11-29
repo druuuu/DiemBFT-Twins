@@ -33,8 +33,10 @@ class BlockTree:
         self.id_block[block.id] = block
         if block.qc is None:
             '''Ledger.speculate(b.qc.block id, b.id, b.payload)'''
+            # self.ledger.speculate(None, block.id, [
+            #     txn['command'] for txn in block.payload])
             self.ledger.speculate(None, block.id, [
-                txn['command'] for txn in block.payload])
+                txn for txn in block.payload])
 
             '''pending block tree.add(b)'''
             self.pending_block_tree[block] = []
