@@ -19,7 +19,6 @@ class NetworkPlayground(process):
         # output(self.node_number_to_pid_mapping)
         # output(self.pid_to_node_number_mapping)
 
-
     ##################   Helper functions   ##################
 
     ''' returns True if node_number present in twin_to_node else return False '''
@@ -58,8 +57,9 @@ class NetworkPlayground(process):
     ''' If the node p is a twin, then message should appear as though it was sent by the actual node, and not the twin '''
     def replace_with_twin_if_needed(node):
         actual_sender = node
+
         if self.is_twin(node):
-            actual_sender = self.twin_to_node(node)
+            actual_sender = self.twin_to_node[node]
         return actual_sender
 
     ''' sends the msg to the appropriate nodes, attaching sender node in message '''
@@ -71,8 +71,6 @@ class NetworkPlayground(process):
         # send((msg, sender), to=node_pids)
 
     ##########################################################
-
-
 
     ##################   Receive Handlers   ##################
 
@@ -99,7 +97,8 @@ class NetworkPlayground(process):
             # no notion of partitions in this round, i.e. all nodes present in the same partition
 
             # sender node will be updated if it is a twin
-            actual_sender_node = self.replace_with_twin_if_needed(msg_sender_number)
+            actual_sender_node = self.replace_with_twin_if_needed(
+                msg_sender_number)
 
             # broadcast messages to all nodes in the system
 
@@ -112,15 +111,14 @@ class NetworkPlayground(process):
 
         ''' When msg_round <= rounds, create partitions according to the scenario '''
         # get all nodes in partition to form list_of_validators_to_send_to
-        destination_nodes = self.get_partition(all_partitions, msg_sender_number)
+        destination_nodes = self.get_partition(
+            all_partitions, msg_sender_number)
         output(destination_nodes)
         # sender node will be updated if it is a twin
-        actual_sender_node = self.replace_with_twin_if_needed(msg_sender_number)
-
+        actual_sender_node = self.replace_with_twin_if_needed(
+            msg_sender_number)
         # send msg to all nodes in partition with the correct sender_node
         self.send_to_nodes(destination_nodes, proposal_msg, actual_sender_node)
-
-
 
     def receive(msg=('Vote', vote_msg, destination_node_num), from_=msg_sender):
         msg_round = self.get_msg_round(msg, MsgType.Vote)
@@ -148,7 +146,8 @@ class NetworkPlayground(process):
 
         ''' unicast message to destination node of msg '''
         # get all nodes in partition
-        node_nums_in_partition = get_partition(all_partitions, msg_sender_number)
+        node_nums_in_partition = get_partition(
+            all_partitions, msg_sender_number)
 
         # get destination node of message
         # destination_node_num = get_destination_from_msg(msg)
@@ -164,12 +163,11 @@ class NetworkPlayground(process):
             destination_nodes.append(self.get_twin(destination_node_num))
 
         # sender node will be updated if it is a twin
-        actual_sender_node = self.replace_with_twin_if_needed(msg_sender_number)
+        actual_sender_node = self.replace_with_twin_if_needed(
+            msg_sender_number)
 
         # send msg to all destination nodes in partition with the correct sender_node
         self.send_to_nodes(destination_nodes, vote_msg, actual_sender_node)
-
-
 
     def receive(msg=('Timeout', timeout_msg), from_=msg_sender):
         msg_round = self.get_msg_round(msg, MsgType.Timeout)
@@ -189,26 +187,28 @@ class NetworkPlayground(process):
             # no notion of partitions in this round, i.e. all nodes present in the same partition
 
             # sender node will be updated if it is a twin
-            actual_sender_node = self.replace_with_twin_if_needed(msg_sender_number)
+            actual_sender_node = self.replace_with_twin_if_needed(
+                msg_sender_number)
 
             # broadcast messages to all nodes in the system
             destination_nodes = set()
             for partition in all_partitions:
                 destination_nodes.update(partition)
-            self.send_to_nodes(destination_nodes, timeout_msg, actual_sender_node)
+            self.send_to_nodes(destination_nodes,
+                               timeout_msg, actual_sender_node)
             return
 
         ''' When msg_round <= rounds, create partitions according to the scenario '''
         # get all nodes in partition to form list_of_validators_to_send_to
-        destination_nodes = self.get_partition(all_partitions, msg_sender_number)
+        destination_nodes = self.get_partition(
+            all_partitions, msg_sender_number)
 
         # sender node will be updated if it is a twin
-        actual_sender_node = self.replace_with_twin_if_needed(msg_sender_number)
+        actual_sender_node = self.replace_with_twin_if_needed(
+            msg_sender_number)
 
         # send msg to all nodes in partition with the correct sender_node
         self.send_to_nodes(destination_nodes, timeout_msg, actual_sender_node)
-
-
 
     ##########################################################
 
