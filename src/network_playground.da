@@ -1,11 +1,16 @@
 # type: ignore
 from utils import getObjectFromPath
 from object_types import MsgType
+from logger_util import LOGGER
 
 
 class NetworkPlayground(process):
     def setup(number_of_nodes: int, number_of_twins: int, scenario, scenario_number_mapping, node_to_twin, twin_to_node):
         # self.rounds = len(getObjectFromPath(scenario, 'partitions'))
+        # output("########", LOGGER.networkPlayground)
+        # LOGGER.np = self
+        # output("########", LOGGER.networkPlayground)
+
         self.rounds = len(scenario['leaders'])
         self.commit_config = dict()
         self.scenario_number_mapping = scenario_number_mapping
@@ -76,11 +81,12 @@ class NetworkPlayground(process):
     ##################   Receive Handlers   ##################
 
     def receive(msg=('Proposal', proposal_msg), from_=msg_sender):
-
-        msg_round = self.get_msg_round(msg, MsgType.Proposal)
+        output("Received proposal from ", msg_sender)
+        msg_round = self.get_msg_round(proposal_msg, MsgType.Proposal)
         # get partitions for current message type and round
-        all_partitions = self.get_partitions_for_type(MsgType.Proposal)[
+        all_partitions = self.get_partitions_for_msg_type(MsgType.Proposal)[
             msg_round]
+        output(msg_round, all_partitions)
 
         ''' if msg_round exceeds even the over estimated round, ignore '''
         if msg_round > self.rounds + 3:
@@ -95,16 +101,18 @@ class NetworkPlayground(process):
             actual_sender_node = self.replace_with_twin_if_needed(msg_sender)
 
             # broadcast messages to all nodes in the system
+            # TODO: destination nodes is empty
             destination_nodes = set()
             for partition in all_partitions:
                 destination_nodes.update(partition)
-            self.send_to_nodes(destination_nodes, msg, actual_sender_node)
+            self.send_to_nodes(destination_nodes,
+                               proposal_msg, actual_sender_node)
             return
 
         ''' When msg_round <= rounds, create partitions according to the scenario '''
         # get all nodes in partition to form list_of_validators_to_send_to
         destination_nodes = self.get_partition(all_partitions, msg_sender)
-
+        output(destination_nodes)
         # sender node will be updated if it is a twin
         actual_sender_node = self.replace_with_twin_if_needed(msg_sender)
 
@@ -161,7 +169,7 @@ class NetworkPlayground(process):
         msg_round = self.get_msg_round(msg, MsgType.Timeout)
 
         # get partitions for current message type and round
-        all_partitions = self.get_partitions_for_type(MsgType.Timeout)[
+        all_partitions = self.get_partitions_for_msg_type(MsgType.Timeout)[
             msg_round]
 
         ''' if msg_round exceeds even the over estimated round, ignore '''

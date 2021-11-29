@@ -16,7 +16,7 @@ from safety import Safety
 
 class Validator (process):
 
-    def setup(config, config_id: int, validator_id: int, replicas: list,  private_key, public_keys_validators, leaders):
+    def setup(config, config_id: int, validator_id: int, replicas: list,  private_key, public_keys_validators, leaders, networkPlayground):
         output("Validator with id ", validator_id)
         LOGGER.replicas = replicas
         LOGGER.process_id = "validator_" + str(validator_id)
@@ -43,6 +43,7 @@ class Validator (process):
         self.leader_election = LeaderElection(
             validator_id, replicas, self.ledger, self.pacemaker, config['window_size'], config['exclude_size'], leaders)
         self.replicas = replicas
+        self.networkPlayground = networkPlayground
         Cryptography.private_key = self.private_key
         Cryptography.replicas = self.replicas
         Cryptography.public_keys_validators = self.public_keys_validators
@@ -71,7 +72,6 @@ class Validator (process):
 
     '''Procedure start event processing(M)'''
     def run():
-        output("Starting node")
         self.pacemaker.start_timer(1)
         LOGGER.log(replicas[validator_id])
         process_new_round_event(None)
@@ -115,34 +115,34 @@ class Validator (process):
     def process_new_round_event(last_tc):
         LOGGER.log('Validator: process_new_round_event', last_tc)
         output(self.leader_election.get_leader(self.pacemaker.current_round))
-        output("reached here")
         '''if u = LeaderElection.get leader(Pacemaker.current round) then'''
         # if self.replicas[validator_id] == self.leader_election.get_leader(self.pacemaker.current_round):
         if validator_id == self.leader_election.get_leader(self.pacemaker.current_round):
             # Check if there are any transactions in the MemPool
             output("I am leader")
-            if self.mempool.peek_pool() == 0:
-                self.should_start_new_round = True
-                prev_block = self.id_block[self.blocktree.high_qc.vote_info.id]
-                prev_block_txn_len = len(prev_block.payload)
-                prev_qc = prev_block.qc
-                if prev_qc is not None:
-                    prev_prev_block = self.id_block[prev_qc.vote_info.id]
-                    prev_prev_block_txn_len = len(prev_prev_block.payload)
-                else:
-                    prev_prev_block_txn_len = 0
+            # if self.mempool.peek_pool() == 0:
+            #     self.should_start_new_round = True
+            #     prev_block = self.id_block[self.blocktree.high_qc.vote_info.id]
+            #     prev_block_txn_len = len(prev_block.payload)
+            #     prev_qc = prev_block.qc
+            #     if prev_qc is not None:
+            #         prev_prev_block = self.id_block[prev_qc.vote_info.id]
+            #         prev_prev_block_txn_len = len(prev_prev_block.payload)
+            #     else:
+            #         prev_prev_block_txn_len = 0
 
-                # Check if last two parent blocks had empty transactions
-                # No need to process new round with empty blocks anymore
-                if prev_block_txn_len == 0 and prev_prev_block_txn_len == 0:
-                    LOGGER.log(
-                        'Validator: process_new_round_event: returned as no transactions in mempool', last_tc)
-                    return
+            #     # Check if last two parent blocks had empty transactions
+            #     # No need to process new round with empty blocks anymore
+            #     if prev_block_txn_len == 0 and prev_prev_block_txn_len == 0:
+            #         LOGGER.log(
+            #             'Validator: process_new_round_event: returned as no transactions in mempool', last_tc)
+            #         return
 
             '''b ← Block-Tree.generate block( MemPool.get transactions(),
                     Pacemaker.current round )'''
+            new_txn = self.mempool.get_transactions()
             block = self.blocktree.generate_block(
-                self.mempool.get_transactions(), self.pacemaker.current_round)
+                new_txn, self.pacemaker.current_round)
             LOGGER.log_action('Created a new block', block)
 
             '''broadcast ProposalMsghb, last tc, Block-Tree.high commit qci'''
@@ -152,9 +152,10 @@ class Validator (process):
                 high_commit_qc=self.blocktree.high_commit_qc,
                 validator=validator_id
             )
-            send(('Proposal', proposal_msg), to=self.replicas)
+            output("Generated proposal_msg")
+            send(('Proposal', proposal_msg), to=self.networkPlayground)
             LOGGER.log_event("Sent", "Proposal",
-                             proposal_msg, self.replicas)
+                             proposal_msg, self.networkPlayground)
 
         LOGGER.log("Validator: process_new_round_event ends", None)
 
