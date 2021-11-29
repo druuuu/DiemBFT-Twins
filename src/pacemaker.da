@@ -62,6 +62,7 @@ class Pacemaker:
         timeout_info = self.safety.make_timeout(
             self.current_round, self.blocktree.high_qc, self.last_round_tc)
         if timeout_info is not None:
+
             LOGGER.log_action("Local Timeout occurred", timeout_info)
             '''broadcast TimeoutMsghtimeout info, last round tc, Block-Tree.high commit qci'''
             timeout_msg = TimeoutMsg(
@@ -101,7 +102,7 @@ class Pacemaker:
             local timeout round() // Bracha timeout'''
         if len(self.tmo_senders[tmo_info.round]) == self.f + 1:
             # self.stop_timer(self.current_round)
-            #Restart timer for current round for timeout message retransmission in case timeout message drops
+            # Restart timer for current round for timeout message retransmission in case timeout message drops
             self.start_timer(self.current_round)
             self.local_timeout_round()  # Bracha timeout
 

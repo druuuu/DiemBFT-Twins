@@ -94,6 +94,7 @@ class BlockTree:
 
         '''pending votes[vote idx] ← pending votes[vote idx] ∪ v.signature'''
         if vote_idx in self.pending_votes:
+
             self.pending_votes[vote_idx].append(vote_msg.signature)
             self.pending_signers[vote_idx].append(vote_msg.sender)
         else:
@@ -102,6 +103,7 @@ class BlockTree:
 
         '''if |pending votes[vote idx]| = 2f + 1 then'''
         if len(self.pending_votes[vote_idx]) == 2*self.f + 1:
+
             '''qc ←QC h
                 vote info ← v.vote info,
                 state id ← v.state id,
