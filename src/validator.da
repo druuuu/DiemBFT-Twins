@@ -241,11 +241,12 @@ class Validator (process):
         # LOGGER.log("Received VoteMsg ends ", None)
 
     '''Procedure process timeout msg(M)'''
-    def receive(msg=('Timeout', timeout_msg), from_=p):
+    def receive(msg=('Timeout', timeout_msg, timeout_sender), from_=p):
         LOGGER.log_event("Received", "Timeout", timeout_msg, p)
-
+        output("Received timeout message from ",
+               timeout_sender, "-> ", validator_id)
         signature_verified = Cryptography.get_verified_message(
-            timeout_msg.tmo_info.author_signature, public_keys_validators[p])
+            timeout_msg.tmo_info.author_signature, public_keys_validators[timeout_sender])
 
         if signature_verified is not None:
             LOGGER.log_action("Verified TimeoutMsg signature", True)

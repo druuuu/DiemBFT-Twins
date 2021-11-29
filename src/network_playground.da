@@ -166,9 +166,8 @@ class NetworkPlayground(process):
                            vote_msg, actual_sender_node)
 
     def receive(msg=('Timeout', timeout_msg), from_=msg_sender):
-        msg_round = self.get_msg_round(msg, MsgType.Timeout)
+        msg_round = self.get_msg_round(timeout_msg, MsgType.Timeout)
         msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
-
         # get partitions for current message type and round
         all_partitions = self.get_partitions_for_msg_type(MsgType.Timeout)[
             msg_round]
