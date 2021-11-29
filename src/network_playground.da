@@ -135,11 +135,11 @@ class NetworkPlayground(process):
             # no notion of partitions in this round, i.e. all nodes present in the same partition
 
             ''' unicast message to destination node of msg '''
-            destination_nodes.append(destination_node_num)
+            destination_nodes.add(destination_node_num)
 
             ''' If destination node has twin, then message should be sent to twin as well '''
             if self.get_twin(destination_node_num) is not None:
-                destination_nodes.append(self.get_twin(destination_node_num))
+                destination_nodes.add(self.get_twin(destination_node_num))
 
             self.send_to_nodes('Vote', destination_nodes, vote_msg, actual_sender_node)
             return
@@ -152,11 +152,11 @@ class NetworkPlayground(process):
         # if destination node of msg is present in the same partition
         if destination_node_num in node_nums_in_partition:
             # add this node to final list of destination nodes
-            destination_nodes.append(destination_node_num)
+            destination_nodes.add(destination_node_num)
 
         if self.get_twin(destination_node_num) is not None and self.get_twin(destination_node_num) in node_nums_in_partition:
             # add twin of the node to final list of destination nodes
-            destination_nodes.append(self.get_twin(destination_node_num))
+            destination_nodes.add(self.get_twin(destination_node_num))
 
         # sender node will be updated if it is a twin
         actual_sender_node = self.replace_with_twin_if_needed(
@@ -210,6 +210,7 @@ class NetworkPlayground(process):
 
     # def receive(msg=('Done',), from_=scenario_executor):
     #     self.send_to_nodes()
+    #     send commmit config to scenario ...
     #     pass
 
 
