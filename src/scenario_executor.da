@@ -77,14 +77,14 @@ class ScenarioExecutor(process):
         # Setup the non-faulty validators
         for personal_id, validator in enumerate(validators):
             setup(validator, (config, config_id, personal_id, list(validators), validator_private_keys[personal_id], validator_public_keys,
-                              leaders, networkPlayground))
+                              leaders, networkPlayground, personal_id))
 
         # Define create_twins funtion
         # def create_twins():
         twins = new(Validator, num=nTwins)
         for personal_id, twin in enumerate(twins):
             setup(twin, (config, config_id, personal_id, list(validators), validator_private_keys[personal_id], validator_public_keys,
-                         leaders, networkPlayground))
+                         leaders, networkPlayground, personal_id+nValidators))
             twin_to_node[personal_id+nValidators] = personal_id
             node_to_twin[personal_id] = personal_id+nValidators
             node_number_to_pid_mapping[personal_id+nValidators] = twin

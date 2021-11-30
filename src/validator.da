@@ -16,10 +16,11 @@ from safety import Safety
 
 class Validator (process):
 
-    def setup(config, config_id: int, validator_id: int, replicas: list,  private_key, public_keys_validators, leaders, networkPlayground):
+    def setup(config, config_id: int, validator_id: int, replicas: list,  private_key, public_keys_validators, leaders, networkPlayground, node_number):
         output("Validator with id ", validator_id)
         LOGGER.replicas = replicas
-        LOGGER.process_id = "validator_" + str(validator_id)
+        # LOGGER.process_id = "validator_" + str(validator_id)
+        LOGGER.process_id = "validator_" + str(node_number)
         # LOGGER.clients = clients
         LOGGER.filename = '../logs/config' + str(config_id) + '/' \
             + LOGGER.process_id + ".log"
@@ -32,7 +33,7 @@ class Validator (process):
         self.should_start_new_round = True
 
         self.ledger = Ledger(
-            config_id, validator_id, self.id_block, self.recently_committed_block_ids, self.request_cache)
+            config_id, validator_id, self.id_block, self.recently_committed_block_ids, self.request_cache, node_number)
         self.blocktree = BlockTree(
             validator_id, replicas, self.ledger, config['nfaulty'], self.id_block)
         self.safety = Safety(validator_id, replicas,
@@ -144,6 +145,7 @@ class Validator (process):
             '''b ← Block-Tree.generate block( MemPool.get transactions(),
                     Pacemaker.current round )'''
             new_txn = self.mempool.get_transactions()
+            output('In round ', self.pacemaker.current_round, " = ", new_txn)
             block = self.blocktree.generate_block(
                 new_txn, self.pacemaker.current_round)
             LOGGER.log_action('Created a new block', block)
@@ -177,21 +179,22 @@ class Validator (process):
             if proposal_msg.high_commit_qc is not None:
                 '''process certificate qc(P.high commit qc)'''
                 process_certificate_qc(proposal_msg.high_commit_qc)
-
+            if self.pacemaker.current_round < proposal_msg.block.round:
+                output("&&&&&&&", self.pacemaker.current_round,
+                       "   ", proposal_msg.block.round)
+                output("SYNC UP REQUIRED ", self.validator_id)
             '''Pacemaker.advance round tc(P.last round tc)'''
             self.pacemaker.advance_round_tc(proposal_msg.last_round_tc)
             '''round ← Pacemaker.current round'''
             round = self.pacemaker.current_round
-            output("Received proposal for round", self.pacemaker.current_round)
             '''leader ← LeaderElection.get leader(current round)'''
             leader = self.leader_election.get_leader(round)
 
             '''if P.block.round 6= round ∨ P.sender 6= leader ∨ P.block.author 6= leader then
                     return'''
-
             # if proposal_msg.block.round != round or replicas[proposal_msg.sender] != leader or replicas[proposal_msg.block.author] != leader:
             if proposal_msg.block.round != round or proposal_msg.sender != leader or proposal_msg.block.author != leader:
-
+                output("SYNC UP REQUIRED")
                 LOGGER.log("ROUND PROPOSAL EARLY EXIT", proposal_msg.block.round,
                            round, replicas[proposal_msg.sender], leader)
                 return
@@ -236,6 +239,7 @@ class Validator (process):
                 LOGGER.log_action("Generated a Quorum Certificate", qc)
                 '''process certificate qc(qc)
                 process new round event(⊥)'''
+                output("*****QC generated for round ", qc.vote_info.round)
                 process_certificate_qc(qc)
                 process_new_round_event(None)
         else:
@@ -268,6 +272,7 @@ class Validator (process):
                 LOGGER.log_action("Generated a Timeout Certificate", tc)
                 '''process certificate qc(qc)
                 process new round event(⊥)'''
+                output("TC GENERATE FOR ROUND ", tc.round)
                 self.pacemaker.advance_round_tc(tc)
                 process_new_round_event(tc)
         else:

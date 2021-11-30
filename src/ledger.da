@@ -4,7 +4,7 @@ from logger_util import LOGGER
 
 class Ledger:
 
-    def __init__(self, config_id, validator_id, id_block, recently_committed_block_ids, request_cache):
+    def __init__(self, config_id, validator_id, id_block, recently_committed_block_ids, request_cache, node_number):
         self.validator_id = validator_id
         self.config_id = config_id
         self.state_id = 0
@@ -14,7 +14,7 @@ class Ledger:
         self.commited = dict()
         self.id_to_block = id_block
         self.request_cache = request_cache
-        self.filename = "validator_" + str(validator_id) + ".ledger"
+        self.filename = "validator_" + str(node_number) + ".ledger"
         fp = open('../ledgers/config' + str(config_id) +
                   "/" + self.filename, 'w')
         fp.close()
@@ -88,18 +88,20 @@ class Ledger:
 
         fp = open('../ledgers/config' + str(self.config_id) +
                   "/" + self.filename, 'a+')
+        print(self.validator_id, "------------------------>", stack)
         while(stack):
             block_id, payload = stack.pop()
             self.commited[block_id] = payload
-            for txn in payload:
-                # if txn['req_id'] in self.request_cache:
-                #     LOGGER.log(
-                #         'Ledger: commit skipping txn as already committed', txn)
-                #     continue
-                # else:
-                LOGGER.log('Ledger: commit committing a txn', txn)
-                # fp.write(txn['command']+'\n')
-                fp.write(txn+'\n')
+            # print("This is the payload = ", payload)
+            # for txn in payload:
+            #     # if txn['req_id'] in self.request_cache:
+            #     #     LOGGER.log(
+            #     #         'Ledger: commit skipping txn as already committed', txn)
+            #     #     continue
+            #     # else:
+            #     LOGGER.log('Ledger: commit committing a txn', txn)
+            #     # fp.write(txn['command']+'\n')
+            fp.write(payload+'\n')
             self.recently_committed_block_ids.append(block_id)
             LOGGER.log_action('Committed blocks to ledger',
                               self.recently_committed_block_ids)

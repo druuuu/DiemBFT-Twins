@@ -93,7 +93,6 @@ class NetworkPlayground(process):
 
         ''' When current round is after self.rounds, there is only one partition with all the nodes '''
         if msg_round > self.rounds:
-            output("Proposal exceeding rounds")
             # no notion of partitions in this round, i.e. all nodes present in the same partition
 
             # sender node will be updated if it is a twin
@@ -105,7 +104,8 @@ class NetworkPlayground(process):
             destination_nodes = set()
             for partition in all_partitions:
                 destination_nodes.update(partition)
-
+            output("Sending proposal from ", msg_sender_number,
+                   " to ", destination_nodes, "in round ", msg_round)
             self.send_to_nodes('Proposal', list(destination_nodes),
                                proposal_msg, actual_sender_node)
             return
@@ -117,6 +117,8 @@ class NetworkPlayground(process):
         # sender node will be updated if it is a twin
         actual_sender_node = self.replace_with_twin_if_needed(
             msg_sender_number)
+        output("Sending proposal from ", msg_sender_number,
+               " to ", destination_nodes, "in round ", msg_round)
         # send msg to all nodes in partition with the correct sender_node
         self.send_to_nodes('Proposal', destination_nodes,
                            proposal_msg, actual_sender_node)
@@ -145,7 +147,8 @@ class NetworkPlayground(process):
             ''' If destination node has twin, then message should be sent to twin as well '''
             if self.get_twin(destination_node_num) is not None:
                 destination_nodes.add(self.get_twin(destination_node_num))
-
+            output("Sending vote from ", msg_sender_number,
+                   " to ", destination_nodes, "in round ", msg_round)
             self.send_to_nodes('Vote', list(destination_nodes),
                                vote_msg, actual_sender_node)
             return
@@ -166,7 +169,8 @@ class NetworkPlayground(process):
         # sender node will be updated if it is a twin
         actual_sender_node = self.replace_with_twin_if_needed(
             msg_sender_number)
-
+        output("Sending vote from ", msg_sender_number,
+               " to ", destination_nodes, "in round ", msg_round)
         # send msg to all destination nodes in partition with the correct sender_node
         self.send_to_nodes('Vote', destination_nodes,
                            vote_msg, actual_sender_node)
@@ -197,19 +201,23 @@ class NetworkPlayground(process):
             destination_nodes = set()
             for partition in all_partitions:
                 destination_nodes.update(partition)
+            output("Sending timeout from ", msg_sender_number,
+                   " to ", destination_nodes, "in round ", msg_round)
             self.send_to_nodes('Timeout', list(destination_nodes),
                                timeout_msg, actual_sender_node)
             return
 
         ''' When msg_round <= rounds, create partitions according to the scenario '''
         # get all nodes in partition to form list_of_validators_to_send_to
+
         destination_nodes = self.get_partition(
             all_partitions, msg_sender_number)
 
         # sender node will be updated if it is a twin
         actual_sender_node = self.replace_with_twin_if_needed(
             msg_sender_number)
-
+        output("Sending timeout from ", msg_sender_number,
+               " to ", destination_nodes, "in round ", msg_round)
         # send msg to all nodes in partition with the correct sender_node
         self.send_to_nodes('Timeout', destination_nodes,
                            timeout_msg, actual_sender_node)
