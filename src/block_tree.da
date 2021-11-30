@@ -32,6 +32,7 @@ class BlockTree:
         LOGGER.log('BlockTree: execute_and_insert', block)
         self.id_block[block.id] = block
         if block.qc is None:
+            # print("if")
             '''Ledger.speculate(b.qc.block id, b.id, b.payload)'''
             # self.ledger.speculate(None, block.id, [
             #     txn['command'] for txn in block.payload])
@@ -40,19 +41,26 @@ class BlockTree:
 
             '''pending block tree.add(b)'''
             self.pending_block_tree[block] = []
+            # print("if end")
         else:
+            # print("else ")
             '''Ledger.speculate(b.qc.block id, b.id, b.payload)'''
             self.ledger.speculate(block.qc.vote_info.id, block.id, [
-                txn['command'] for txn in block.payload])
+                txn for txn in block.payload])
 
             '''pending block tree.add(b)'''
+
             if block.qc.vote_info.id not in self.id_block or self.id_block[block.qc.vote_info.id] not in self.pending_block_tree:
                 # print("Not in the self.pendingtree", block.qc.vote_info.id)
-                LOGGER.log(
-                    'BlockTree: execute_and_insert ends without adding anything', block)
+
+                # LOGGER.log(
+                #     'BlockTree: execute_and_insert ends without adding anything', block)
                 return
+            # print(self.validator_id, " ------------------> ",
+            #       block)
             self.pending_block_tree[self.id_block[block.qc.vote_info.id]].append(
                 block)
+
             self.pending_block_tree[block] = []
         LOGGER.log('BlockTree: execute_and_insert ends', block)
 
@@ -132,7 +140,6 @@ class BlockTree:
         if qc is not None and qc.ledger_commit_info.commit_state_id != None:
             '''Ledger.commit(qc.vote info.parent id)'''
             self.ledger.commit(qc.vote_info.parent_id)
-
             '''pending block tree.prune(qc.vote info.parent id) 
             // parent id becomes the new root of pending'''
             # This will prune the multiple forks if they exists

@@ -18,6 +18,9 @@ import shutil
 
 class ScenarioExecutor(process):
     def setup(config, config_id):
+        self.stopped_processes = {}
+        self.nValidators = None
+        self.nTwins = None
         pass
 
     def run():
@@ -31,7 +34,10 @@ class ScenarioExecutor(process):
 
         # For each scenario in json file, call execute_scenario
         for each_scenario in json_content["scenarios"]:
+            self.nValidators = each_scenario['number_of_nodes']
+            self.nTwins = each_scenario['number_of_twins']
             execute_scenario(each_scenario)
+        output("REACHED END")
 
     def execute_scenario(scenario):
 
@@ -39,6 +45,9 @@ class ScenarioExecutor(process):
         nTwins = scenario['number_of_twins']
         current_scenario = scenario['scenario']
         # scenario variable initialization
+        self.nValidators = nValidators
+        self.nTwins = nTwins
+        self.stopped_processes = {}
         leaders = current_scenario['leaders']
 
         validator_private_keys = {}
@@ -85,11 +94,26 @@ class ScenarioExecutor(process):
         # create_twins()
 
         # Setup network_playground
-        setup(networkPlayground, (nValidators, nTwins, current_scenario,
+        setup(networkPlayground, (self, nValidators, nTwins, current_scenario,
                                   node_number_to_pid_mapping, pid_to_node_number_mapping, node_to_twin, twin_to_node))
         output(twins)
         # Start all processes
         start(networkPlayground | twins | validators)
+
+        def receive(msg=('Quit process', p), from_=networkPlayground):
+            if p not in self.stopped_processes:
+
+                send(('Stop Running'), to=p)
+                output("asked process ", p)
+                self.stopped_processes[p] = True
+
+            if len(self.stopped_processes) == self.nValidators + self.nTwins:
+
+                send(("Stop Network Playground"), to=networkPlayground)
+                # output("Stopping ")
+                # exit()
+        # output("stopped")
+        # await()
         # start(twins)
         # start(validators)
 
@@ -98,12 +122,10 @@ class ScenarioExecutor(process):
         # TODO: stop the network_playground
 
         # Receive handler : Network Playground asks to quit process 'p'
-        def receive(msg=('Quit Process', p), from_=networkPlayground):
-            pass
-            # TODO: Retrieve process and stop it (depends if p is personal_id or process_id)
 
-            # TODO: Receive handler : Commit config
-            # TODO: Safety check function
+    # TODO: Retrieve process and stop it (depends if p is personal_id or process_id)
+    # TODO: Receive handler : Commit config
+    # TODO: Safety check function
 
 
 def is_config_valid(config):

@@ -5,13 +5,13 @@ from logger_util import LOGGER
 
 
 class NetworkPlayground(process):
-    def setup(number_of_nodes: int, number_of_twins: int, scenario, node_number_to_pid_mapping, pid_to_node_number_mapping, node_to_twin, twin_to_node):
+    def setup(scenario_exector_pid, number_of_nodes: int, number_of_twins: int, scenario, node_number_to_pid_mapping, pid_to_node_number_mapping, node_to_twin, twin_to_node):
         # self.rounds = len(getObjectFromPath(scenario, 'partitions'))
         # output("########", LOGGER.networkPlayground)
         # LOGGER.np = self
         # output("########", LOGGER.networkPlayground)
-
-        self.rounds = len(scenario['leaders'])
+        self.scenario = scenario
+        self.rounds = len(scenario['leaders'])-3
         self.commit_config = dict()
         self.node_number_to_pid_mapping = node_number_to_pid_mapping
         self.done_flag = False
@@ -66,10 +66,11 @@ class NetworkPlayground(process):
     def send_to_nodes(msg_name, node_nums_to_send, msg, sender):
         node_pids = []
         for node_num in node_nums_to_send:
+            # print("Reaching here")
             node_pids.append(getObjectFromPath(
                 self.node_number_to_pid_mapping, node_num))
         if node_pids:
-            output("sending ", msg_name, " to ", node_pids, "from ", sender)
+            # output("sending ", msg_name, " to ", node_pids, "from ", sender)
             send((msg_name, msg, sender), to=node_pids)
 
     ##########################################################
@@ -83,15 +84,16 @@ class NetworkPlayground(process):
         msg_round = self.get_msg_round(proposal_msg, MsgType.Proposal)
         # get partitions for current message type and round
         all_partitions = self.get_partitions_for_msg_type(MsgType.Proposal)[
-            msg_round]
-
+            msg_round-1]
         ''' if msg_round exceeds even the over estimated round, ignore '''
-        if msg_round > self.rounds + 3:
-            send(('Quit process', msg_sender_number), to=parent())
+        if msg_round >= self.rounds + 3:
+            output("Proposal Sending quit process")
+            send(('Quit process', msg_sender), to=scenario_exector_pid)
             return
 
         ''' When current round is after self.rounds, there is only one partition with all the nodes '''
         if msg_round > self.rounds:
+            output("Proposal exceeding rounds")
             # no notion of partitions in this round, i.e. all nodes present in the same partition
 
             # sender node will be updated if it is a twin
@@ -103,7 +105,8 @@ class NetworkPlayground(process):
             destination_nodes = set()
             for partition in all_partitions:
                 destination_nodes.update(partition)
-            self.send_to_nodes('Proposal', destination_nodes,
+
+            self.send_to_nodes('Proposal', list(destination_nodes),
                                proposal_msg, actual_sender_node)
             return
 
@@ -123,10 +126,10 @@ class NetworkPlayground(process):
         destination_nodes = set()
         msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
         all_partitions = self.get_partitions_for_msg_type(MsgType.Vote)[
-            msg_round]
+            msg_round-1]
         ''' if msg_round exceeds even the over estimated round, ignore '''
-        if msg_round > self.rounds + 3:
-            send(('Quit process', msg_sender_number), to=parent())
+        if msg_round >= self.rounds + 3:
+            send(('Quit process', msg_sender), to=scenario_exector_pid)
             return
 
         ''' When current round is after self.rounds, there is only one partition with all the nodes '''
@@ -134,13 +137,16 @@ class NetworkPlayground(process):
             # no notion of partitions in this round, i.e. all nodes present in the same partition
 
             ''' unicast message to destination node of msg '''
+            actual_sender_node = self.replace_with_twin_if_needed(
+                msg_sender_number)
+
             destination_nodes.add(destination_node_num)
 
             ''' If destination node has twin, then message should be sent to twin as well '''
             if self.get_twin(destination_node_num) is not None:
                 destination_nodes.add(self.get_twin(destination_node_num))
 
-            self.send_to_nodes('Vote', destination_nodes,
+            self.send_to_nodes('Vote', list(destination_nodes),
                                vote_msg, actual_sender_node)
             return
 
@@ -170,11 +176,13 @@ class NetworkPlayground(process):
         msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
         # get partitions for current message type and round
         all_partitions = self.get_partitions_for_msg_type(MsgType.Timeout)[
-            msg_round]
-
+            msg_round-1]
+        # output(all_partitions)
         ''' if msg_round exceeds even the over estimated round, ignore '''
-        if msg_round > self.rounds + 3:
-            send(('Quit process', msg_sender_number), to=parent())
+        if msg_round >= self.rounds + 3:
+            output("Timeout Sending quit process")
+            # output(scenario_exector_pid)
+            send(('Quit process', msg_sender), to=scenario_exector_pid)
             return
 
         ''' When current round is after self.rounds, there is only one partition with all the nodes '''
@@ -189,7 +197,7 @@ class NetworkPlayground(process):
             destination_nodes = set()
             for partition in all_partitions:
                 destination_nodes.update(partition)
-            self.send_to_nodes('Timeout', destination_nodes,
+            self.send_to_nodes('Timeout', list(destination_nodes),
                                timeout_msg, actual_sender_node)
             return
 
@@ -206,6 +214,11 @@ class NetworkPlayground(process):
         self.send_to_nodes('Timeout', destination_nodes,
                            timeout_msg, actual_sender_node)
 
+    def receive(msg=('Stop Network Playground'), from_=se):
+        output("Stopping")
+        exit()
+        output("Stopped")
+
     # def receive(msg=('Done',), from_=scenario_executor):
     #     self.send_to_nodes()
     #     send commmit config to scenario ...
@@ -219,7 +232,7 @@ class NetworkPlayground(process):
         while not self.done_flag:
             # receive what messages exactly?
 
-            if await(received(('Done',), from_=parent())):
+            if await(received(('Done',), from_=scenario_exector_pid)):
                 self.done_flag = True
 
             # if await(receive(msg, destinations)):

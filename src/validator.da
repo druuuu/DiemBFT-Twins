@@ -70,6 +70,9 @@ class Validator (process):
         send(('Timeout', timeout_msg), to=self.networkPlayground)
         LOGGER.log_event('Sent', 'Timeout', timeout_msg, self.replicas)
 
+    def receive(msg=('Stop Running'), from_=se):
+        exit()
+
     '''Procedure start event processing(M)'''
     def run():
         self.pacemaker.start_timer(1)
@@ -85,22 +88,22 @@ class Validator (process):
 
         '''Block-Tree.process qc(qc)'''
         self.blocktree.process_qc(qc)
-
-        LOGGER.log('Validator: process_certificate_qc recent_committed_block', len(
-            self.recently_committed_block_ids))
+        # output("processed qc by blocktree")
+        # LOGGER.log('Validator: process_certificate_qc recent_committed_block', len(
+        #     self.recently_committed_block_ids))
         # Send responses to the requests which were recently committed
-        if len(self.recently_committed_block_ids) > 0:
-            for block_id in self.recently_committed_block_ids:
-                for txn in self.id_block[block_id].payload:
-                    request_id = txn['req_id']
-                    resp = {
-                        'req_id': request_id,
-                        'resp_status': "success"
-                    }
-                    send(('Response', resp), to=txn['client'])
-                    LOGGER.log_event("Sent", "Response", resp, txn['client'])
-                    self.request_cache[request_id] = resp
-            self.recently_committed_block_ids.clear()
+        # if len(self.recently_committed_block_ids) > 0:
+        #     for block_id in self.recently_committed_block_ids:
+        #         for txn in self.id_block[block_id].payload:
+        #             request_id = txn['req_id']
+        #             resp = {
+        #                 'req_id': request_id,
+        #                 'resp_status': "success"
+        #             }
+        #             send(('Response', resp), to=txn['client'])
+        #             LOGGER.log_event("Sent", "Response", resp, txn['client'])
+        #             self.request_cache[request_id] = resp
+        #     self.recently_committed_block_ids.clear()
 
         '''LeaderElection.update leaders(qc)'''
         # no need to update leaders
@@ -115,6 +118,8 @@ class Validator (process):
     def process_new_round_event(last_tc):
         LOGGER.log('Validator: process_new_round_event', last_tc)
         '''if u = LeaderElection.get leader(Pacemaker.current round) then'''
+        # output("Round ", self.pacemaker.current_round, " leader = ",
+        #        self.leader_election.get_leader(self.pacemaker.current_round))
         # if self.replicas[validator_id] == self.leader_election.get_leader(self.pacemaker.current_round):
         if validator_id == self.leader_election.get_leader(self.pacemaker.current_round):
             # Check if there are any transactions in the MemPool
@@ -159,10 +164,8 @@ class Validator (process):
     '''Procedure process proposal msg(P)'''
     def receive(msg=('Proposal', proposal_msg, proposer), from_=p):
         LOGGER.log_event("Received", "Proposal", proposal_msg, p)
-
         signature_verified = Cryptography.get_verified_message(
             proposal_msg.signature, public_keys_validators[proposer])
-
         if signature_verified is not None:
             LOGGER.log_action("Verified ProposalMsg signature", True)
 
@@ -179,8 +182,10 @@ class Validator (process):
             self.pacemaker.advance_round_tc(proposal_msg.last_round_tc)
             '''round ← Pacemaker.current round'''
             round = self.pacemaker.current_round
+            output("Received proposal for round", self.pacemaker.current_round)
             '''leader ← LeaderElection.get leader(current round)'''
             leader = self.leader_election.get_leader(round)
+
             '''if P.block.round 6= round ∨ P.sender 6= leader ∨ P.block.author 6= leader then
                     return'''
 
@@ -199,7 +204,6 @@ class Validator (process):
             #         return
             if len(proposal_msg.block.payload) == 0:
                 self.should_start_new_round = True
-
             '''Block-Tree.execute and insert(P) // Adds a new speculative state to the Ledger'''
             self.blocktree.execute_and_insert(proposal_msg.block)
             '''vote msg ← Safety.make vote(P.block, P.last round tc)'''
@@ -227,7 +231,6 @@ class Validator (process):
 
             '''qc ← Block-Tree.process vote(M)'''
             qc = self.blocktree.process_vote(vote_msg)
-            output("Qc after processing vote ", qc)
             '''if qc != ⊥ then'''
             if qc is not None:
                 LOGGER.log_action("Generated a Quorum Certificate", qc)
@@ -243,8 +246,7 @@ class Validator (process):
     '''Procedure process timeout msg(M)'''
     def receive(msg=('Timeout', timeout_msg, timeout_sender), from_=p):
         LOGGER.log_event("Received", "Timeout", timeout_msg, p)
-        output("Received timeout message from ",
-               timeout_sender, "-> ", validator_id)
+
         signature_verified = Cryptography.get_verified_message(
             timeout_msg.tmo_info.author_signature, public_keys_validators[timeout_sender])
 
