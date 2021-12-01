@@ -320,6 +320,28 @@ class NetworkPlayground(process):
     #                        vote_msg, actual_sender_node)
 
 
+    # def receive(msg=('Timeout', timeout_msg), from_=msg_sender):
+    #     msg_round = self.get_msg_round(timeout_msg, MsgType.Timeout)
+    #     msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
+    #     all_partitions = self.get_partitions_for_msg_type(MsgType.Timeout)[
+    #         msg_round-1]
+    #     if msg_round >= self.rounds + 3:
+    #         send(('Quit Process'), to=self.scenario_executor_pid)
+    #         return
+    #     else:
+    #         # no notion of partitions in this round, i.e. all nodes present in the same partition
+
+    #         # sender node will be updated if it is a twin
+    #         actual_sender_node = self.replace_with_twin_if_needed(
+    #             msg_sender_number)
+    #         # broadcast messages to all nodes in the system
+    #         destination_nodes = set()
+    #         for partition in all_partitions:
+    #             destination_nodes.update(partition)
+    #         self.send_to_nodes('Timeout', list(destination_nodes),
+    #                            timeout_msg, actual_sender_node)
+    #         return
+
     def receive(msg=('Timeout', timeout_msg), from_=msg_sender):
         msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
         msg_round = self.get_msg_round(timeout_msg, MsgType.Timeout)
@@ -445,6 +467,15 @@ class NetworkPlayground(process):
         destination_nodes = list(self.pid_to_node_number_mapping.keys())
         destination_nodes.remove(p)
         send(("Done sync up", p), to=destination_nodes)
+
+    def receive(msg=("Kindly sync up", to_round, behind_node), from_=msg_sender):
+        destination = []
+        destination.append(self.node_number_to_pid_mapping[behind_node])
+        if behind_node in self.node_to_twin:
+            destination.append(
+                self.node_number_to_pid_mapping[self.node_to_twin[behind_node]])
+        # output("sending sync up request to ", destination)
+        send(("Kindly sync up", to_round), to=destination)
 
     def run():
         output("Network playground running")

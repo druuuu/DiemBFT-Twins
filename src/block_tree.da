@@ -141,6 +141,7 @@ class BlockTree:
         '''if qc.ledger commit info.commit state id 6= ⊥ then'''
         if qc is not None and qc.ledger_commit_info.commit_state_id != None:
 
+            # if qc and qc.vote_info and qc.vote_info.round and qc.vote_info.parent_round and qc.vote_info.round - 1 == qc.vote_info.parent_round:
             '''Ledger.commit(qc.vote info.parent id)'''
             self.ledger.commit(qc.vote_info.parent_id)
             '''pending block tree.prune(qc.vote info.parent id) 
@@ -181,6 +182,10 @@ class BlockTree:
             '''high commit qc ← maxround{qc, high commit qc}'''
             self.high_commit_qc = get_qc_with_max_round(
                 qc, self.high_commit_qc)
+        # else:
+        #     print("Emptying self.id_block ", qc)
+        #     self.id_block = dict()
+
         '''high qc ← maxround{qc, high qc}'''
         self.high_qc = get_qc_with_max_round(qc, self.high_qc)
         LOGGER.log('BlockTree: process_qc ends', qc)

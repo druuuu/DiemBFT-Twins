@@ -16,7 +16,7 @@ from safety import Safety
 
 class Validator (process):
     def requestSyncUp(past_round, current_round):
-
+        output("Requesting sync up ", self.validator_id)
         send(('Sync up required', past_round,
               current_round), to=self.networkPlayground)
 
@@ -315,6 +315,14 @@ class Validator (process):
                 send(("Done sync up"), to=self.networkPlayground)
                 # self.syncUpFlag = True
                 # await(not self.syncUpFlag)
+            # elif timeout_msg.tmo_info.round < self.pacemaker.current_round:
+                # output(timeout_msg.tmo_info.round,
+                #        self.pacemaker.current_round)
+                # output("******* ", timeout_sender, "You need to sync up to round ",
+                #        self.pacemaker.current_round, "*******")
+                # send(("Kindly sync up", self.pacemaker.current_round-1,
+                #       timeout_sender), to=self.networkPlayground)
+
             self.pacemaker.advance_round_tc(timeout_msg.last_round_tc)
 
             '''tc ← Pacemaker.process remote timeout(M)'''
@@ -421,6 +429,15 @@ class Validator (process):
             #     output(proposal_msg.block.qc)
             #     output(Cryptography.valid_signatures(
             #         proposal_msg.block.qc))
+
+    def receive(msg=("Kindly sync up", to_round), from_=np):
+        # output("I have to sync up from ",
+        #        self.pacemaker.current_round, "to ", to_round)
+        if self.pacemaker.current_round <= to_round:
+            # break
+            output("I was asked to sync up to ", to_round)
+            requestSyncUp(self.pacemaker.current_round, to_round)
+            await(self.pacemaker.current_round > to_round)
 
 
 class ValidatorFI (process, Validator):
