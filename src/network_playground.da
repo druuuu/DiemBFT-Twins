@@ -118,20 +118,13 @@ class NetworkPlayground(process):
 
     ##########################################################
 
+
+
     ##################   Receive Handlers   ##################
 
     def receive(msg=('Proposal', proposal_msg), from_=msg_sender):
-
         msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
         msg_round = self.get_msg_round(proposal_msg, MsgType.Proposal)
-
-        # get index of partition in which msg_sender lies ---  using get_current_partition_index
-        msg_partition_idx = self.get_current_partition_index(msg_round, msg_sender_number)
-        
-        # check if list of msg_types at that index contains current message type  ----- using
-        if to_drop(msg_round, msg_partition_idx, MsgType.Proposal):
-            # drop this message, ignore
-            return
 
         ''' if msg_round exceeds even the over estimated round, ignore '''
         if msg_round >= self.rounds + 3:
@@ -150,34 +143,32 @@ class NetworkPlayground(process):
             for partition in partitions_in_round:
                 for node_number in partition:
                     destination_nodes.add(node_number)
-            
-            output("Sending proposal from ", msg_sender_number,
-                   " to ", destination_nodes, "in round ", msg_round)
 
         else:
+            # get index of partition in which msg_sender lies ---  using get_current_partition_index
+            msg_partition_idx = self.get_current_partition_index(msg_round, msg_sender_number)
+
+            # check if list of msg_types at that index contains current message type  ----- using
+            if to_drop(msg_round, msg_partition_idx, MsgType.Proposal):
+                # drop this message, ignore
+                output("Dropping proposal from ", msg_sender_number, " to ", destination_nodes, "in round ", msg_round)
+                return
+
             ''' When msg_round <= rounds, create partitions according to the scenario '''
-            # get all nodes in partition to form list_of_validators_to_send_to
-            # destination_nodes = self.get_partition(
-            #     all_partitions, msg_sender_number)
-            
             partition = self.get_partition_at_idx(msg_partition_idx, msg_round, msg_sender)
+            
             for node_number in partition:
                 destination_nodes.add(node_number)
-
-            output("Sending proposal from ", msg_sender_number,
-                " to ", destination_nodes, "in round ", msg_round)
-            # send msg to all nodes in partition with the correct sender_node
-
-
-
+            
         # sender node will be updated if it is a twin
         actual_sender_node = self.replace_with_twin_if_needed(
             msg_sender_number)
 
         if len(destination_nodes) > 0:
+            output("Sending proposal from ", msg_sender_number,
+                " to ", destination_nodes, "in round ", msg_round)
             self.send_to_nodes('Proposal', destination_nodes,
                             proposal_msg, actual_sender_node)
-
 
 
 
@@ -235,103 +226,208 @@ class NetworkPlayground(process):
 
 
     def receive(msg=('Vote', vote_msg, destination_node_num), from_=msg_sender):
-        msg_round = self.get_msg_round(vote_msg, MsgType.Vote)
-        destination_nodes = set()
+        
         msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
-        all_partitions = self.get_partitions_for_msg_type(MsgType.Vote)[
-            msg_round-1]
+        msg_round = self.get_msg_round(vote_msg, MsgType.Vote)
+
         ''' if msg_round exceeds even the over estimated round, ignore '''
         if msg_round >= self.rounds + 3:
+            output("Vote Sending quit process")
             send(('Quit Process'), to=self.scenario_executor_pid)
             return
+
+        destination_nodes = set()
 
         ''' When current round is after self.rounds, there is only one partition with all the nodes '''
         if msg_round > self.rounds:
             # no notion of partitions in this round, i.e. all nodes present in the same partition
-
-            ''' unicast message to destination node of msg '''
-            actual_sender_node = self.replace_with_twin_if_needed(
-                msg_sender_number)
 
             destination_nodes.add(destination_node_num)
 
             ''' If destination node has twin, then message should be sent to twin as well '''
             if self.get_twin(destination_node_num) is not None:
                 destination_nodes.add(self.get_twin(destination_node_num))
-            output("Sending vote from ", msg_sender_number,
-                   " to ", destination_nodes, "in round ", msg_round)
-            self.send_to_nodes('Vote', list(destination_nodes),
-                               vote_msg, actual_sender_node)
-            return
 
-        ''' unicast message to destination node of msg '''
-        # get all nodes in partition
-        node_nums_in_partition = self.get_partition(
-            all_partitions, msg_sender_number)
-        # if destination node of msg is present in the same partition
-        if destination_node_num in node_nums_in_partition:
-            # add this node to final list of destination nodes
-            destination_nodes.add(destination_node_num)
+        else:
 
-        if self.get_twin(destination_node_num) is not None and self.get_twin(destination_node_num) in node_nums_in_partition:
-            # add twin of the node to final list of destination nodes
-            destination_nodes.add(self.get_twin(destination_node_num))
+            # get index of partition in which msg_sender lies ---  using get_current_partition_index
+            msg_partition_idx = self.get_current_partition_index(msg_round, msg_sender_number)
+
+            # check if list of msg_types at that index contains current message type  ----- using
+            if to_drop(msg_round, msg_partition_idx, MsgType.Vote):
+                output("Dropping vote from ", msg_sender_number,
+                    " to ", destination_nodes, "in round ", msg_round)
+                return
+
+            ''' When msg_round <= rounds, create partitions according to the scenario '''
+            partition = self.get_partition_at_idx(msg_partition_idx, msg_round, msg_sender)
+            
+            if destination_node_num in partition:
+                destination_nodes.add(destination_node_num)
+
+            if self.get_twin(destination_node_num) is not None and self.get_twin(destination_node_num) in partition:
+                destination_nodes.add(self.get_twin(destination_node_num))
 
         # sender node will be updated if it is a twin
         actual_sender_node = self.replace_with_twin_if_needed(
             msg_sender_number)
-        output("Sending vote from ", msg_sender_number,
-               " to ", destination_nodes, "in round ", msg_round)
-        # send msg to all destination nodes in partition with the correct sender_node
-        self.send_to_nodes('Vote', destination_nodes,
-                           vote_msg, actual_sender_node)
+
+        if len(destination_nodes) > 0:
+
+            output("Sending vote from ", msg_sender_number,
+                " to ", destination_nodes, "in round ", msg_round)
+            self.send_to_nodes('Vote', destination_nodes,
+                            vote_msg, actual_sender_node)
+
+
+
+    # def receive(msg=('Vote', vote_msg, destination_node_num), from_=msg_sender):
+    #     msg_round = self.get_msg_round(vote_msg, MsgType.Vote)
+    #     destination_nodes = set()
+    #     msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
+    #     all_partitions = self.get_partitions_for_msg_type(MsgType.Vote)[
+    #         msg_round-1]
+    #     ''' if msg_round exceeds even the over estimated round, ignore '''
+    #     if msg_round >= self.rounds + 3:
+    #         send(('Quit Process'), to=self.scenario_executor_pid)
+    #         return
+
+    #     ''' When current round is after self.rounds, there is only one partition with all the nodes '''
+    #     if msg_round > self.rounds:
+    #         # no notion of partitions in this round, i.e. all nodes present in the same partition
+
+    #         ''' unicast message to destination node of msg '''
+    #         actual_sender_node = self.replace_with_twin_if_needed(
+    #             msg_sender_number)
+
+    #         destination_nodes.add(destination_node_num)
+
+    #         ''' If destination node has twin, then message should be sent to twin as well '''
+    #         if self.get_twin(destination_node_num) is not None:
+    #             destination_nodes.add(self.get_twin(destination_node_num))
+    #         output("Sending vote from ", msg_sender_number,
+    #                " to ", destination_nodes, "in round ", msg_round)
+    #         self.send_to_nodes('Vote', list(destination_nodes),
+    #                            vote_msg, actual_sender_node)
+    #         return
+
+    #     ''' unicast message to destination node of msg '''
+    #     # get all nodes in partition
+    #     node_nums_in_partition = self.get_partition(
+    #         all_partitions, msg_sender_number)
+    #     # if destination node of msg is present in the same partition
+    #     if destination_node_num in node_nums_in_partition:
+    #         # add this node to final list of destination nodes
+    #         destination_nodes.add(destination_node_num)
+
+    #     if self.get_twin(destination_node_num) is not None and self.get_twin(destination_node_num) in node_nums_in_partition:
+    #         # add twin of the node to final list of destination nodes
+    #         destination_nodes.add(self.get_twin(destination_node_num))
+
+    #     # sender node will be updated if it is a twin
+    #     actual_sender_node = self.replace_with_twin_if_needed(
+    #         msg_sender_number)
+    #     output("Sending vote from ", msg_sender_number,
+    #            " to ", destination_nodes, "in round ", msg_round)
+    #     # send msg to all destination nodes in partition with the correct sender_node
+    #     self.send_to_nodes('Vote', destination_nodes,
+    #                        vote_msg, actual_sender_node)
+
 
     def receive(msg=('Timeout', timeout_msg), from_=msg_sender):
-        msg_round = self.get_msg_round(timeout_msg, MsgType.Timeout)
         msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
-        # get partitions for current message type and round
-        all_partitions = self.get_partitions_for_msg_type(MsgType.Timeout)[
-            msg_round-1]
-        # output(all_partitions)
+        msg_round = self.get_msg_round(timeout_msg, MsgType.Timeout)
+        
         ''' if msg_round exceeds even the over estimated round, ignore '''
         if msg_round >= self.rounds + 3:
             output("Timeout Sending quit process")
-            # output(scenario_exector_pid)
             send(('Quit Process'), to=self.scenario_executor_pid)
             return
 
-        ''' When current round is after self.rounds, there is only one partition with all the nodes '''
+        destination_nodes = set()
+
         if msg_round > self.rounds:
             # no notion of partitions in this round, i.e. all nodes present in the same partition
-
-            # sender node will be updated if it is a twin
-            actual_sender_node = self.replace_with_twin_if_needed(
-                msg_sender_number)
-
+            partitions_in_round = self.get_partitions_in_round(msg_round)
+            
             # broadcast messages to all nodes in the system
-            destination_nodes = set()
-            for partition in all_partitions:
-                destination_nodes.update(partition)
-            # output("Sending timeout from ", msg_sender_number,
-            #        " to ", destination_nodes, "in round ", msg_round)
-            self.send_to_nodes('Timeout', list(destination_nodes),
-                               timeout_msg, actual_sender_node)
-            return
+            for partition in partitions_in_round:
+                for node_number in partition:
+                    destination_nodes.add(node_number)
+            
+        else:
+            # get index of partition in which msg_sender lies ---  using get_current_partition_index
+            msg_partition_idx = self.get_current_partition_index(msg_round, msg_sender_number)
 
-        ''' When msg_round <= rounds, create partitions according to the scenario '''
-        # get all nodes in partition to form list_of_validators_to_send_to
+            # check if list of msg_types at that index contains current message type  ----- using
+            if to_drop(msg_round, msg_partition_idx, MsgType.Timeout):
+                # drop this message, ignore
+                output("Dropping timeout from ", msg_sender_number, " to ", destination_nodes, "in round ", msg_round)
+                return
 
-        destination_nodes = self.get_partition(
-            all_partitions, msg_sender_number)
+            ''' When msg_round <= rounds, create partitions according to the scenario '''
+            partition = self.get_partition_at_idx(msg_partition_idx, msg_round, msg_sender)
+            
+            for node_number in partition:
+                destination_nodes.add(node_number)
 
         # sender node will be updated if it is a twin
         actual_sender_node = self.replace_with_twin_if_needed(
             msg_sender_number)
-        # output("Sending timeout from ", msg_sender_number,
-        #        " to ", destination_nodes, "in round ", msg_round)
-        # send msg to all nodes in partition with the correct sender_node
-        self.send_to_nodes('Timeout', destination_nodes,
-                           timeout_msg, actual_sender_node)
+
+        if len(destination_nodes) > 0:
+            output("Sending timeout from ", msg_sender_number,
+                " to ", destination_nodes, "in round ", msg_round)
+            self.send_to_nodes('Timeout', destination_nodes,
+                            timeout_msg, actual_sender_node)
+
+
+    # def receive(msg=('Timeout', timeout_msg), from_=msg_sender):
+    #     msg_round = self.get_msg_round(timeout_msg, MsgType.Timeout)
+    #     msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
+    #     # get partitions for current message type and round
+    #     all_partitions = self.get_partitions_for_msg_type(MsgType.Timeout)[
+    #         msg_round-1]
+    #     # output(all_partitions)
+    #     ''' if msg_round exceeds even the over estimated round, ignore '''
+    #     if msg_round >= self.rounds + 3:
+    #         output("Timeout Sending quit process")
+    #         # output(scenario_exector_pid)
+    #         send(('Quit Process'), to=self.scenario_executor_pid)
+    #         return
+
+    #     ''' When current round is after self.rounds, there is only one partition with all the nodes '''
+    #     if msg_round > self.rounds:
+    #         # no notion of partitions in this round, i.e. all nodes present in the same partition
+
+    #         # sender node will be updated if it is a twin
+    #         actual_sender_node = self.replace_with_twin_if_needed(
+    #             msg_sender_number)
+
+    #         # broadcast messages to all nodes in the system
+    #         destination_nodes = set()
+    #         for partition in all_partitions:
+    #             destination_nodes.update(partition)
+    #         # output("Sending timeout from ", msg_sender_number,
+    #         #        " to ", destination_nodes, "in round ", msg_round)
+    #         self.send_to_nodes('Timeout', list(destination_nodes),
+    #                            timeout_msg, actual_sender_node)
+    #         return
+
+    #     ''' When msg_round <= rounds, create partitions according to the scenario '''
+    #     # get all nodes in partition to form list_of_validators_to_send_to
+
+    #     destination_nodes = self.get_partition(
+    #         all_partitions, msg_sender_number)
+
+    #     # sender node will be updated if it is a twin
+    #     actual_sender_node = self.replace_with_twin_if_needed(
+    #         msg_sender_number)
+    #     # output("Sending timeout from ", msg_sender_number,
+    #     #        " to ", destination_nodes, "in round ", msg_round)
+    #     # send msg to all nodes in partition with the correct sender_node
+    #     self.send_to_nodes('Timeout', destination_nodes,
+    #                        timeout_msg, actual_sender_node)
 
     def receive(msg=('Stop Network Playground'), from_=se):
         output("Stopping")
