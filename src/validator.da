@@ -370,7 +370,7 @@ class Validator (process):
         output(proposal_map)
         for r in proposal_map.keys():
             # if r not in self.sync_up_map:
-            if self.pacemaker
+            if self.pacemaker.current_round
 
             # proposal_msg = proposal_map[r]
             # output(proposal_msg.block)
