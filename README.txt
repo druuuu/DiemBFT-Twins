@@ -55,11 +55,18 @@ MAIN FILES:
 
 
 CODE SIZE:
-1. Non-blank Non-comment lines of code:	1252	(Total)
+1.  Non-blank Non-comment lines of code in complete codebase: 1568	(Total)
                                        	277	(Other - client, config, run_diembft)
                                        	975	(Algorithm)
-2. Count was obtained using cloc command - cloc --force-lang="Python",da .
 
+    Files added for Twins implementation: network_playground.da scenario_executor.da ScenarioGenerator.py
+    Non-blank Non-comment lines of code in Twins implementation files: 396
+
+
+2. Count was obtained using commands:
+    cloc command - cloc --force-lang="Python",da .
+    cloc command - cloc --force-lang="Python",da network_playground.da scenario_executor.da ScenarioGenerator.py
+    
 
 3. About 80% of 975 are for the algorithm itself.
 
