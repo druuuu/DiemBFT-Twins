@@ -16,7 +16,8 @@ from safety import Safety
 
 class Validator (process):
     def requestSyncUp(past_round, current_round):
-        output("Requesting sync up ", self.validator_id)
+        output("Requesting sync up ", self.validator_id,
+               " for rounds ", past_round, current_round)
         send(('Sync up required', past_round,
               current_round), to=self.networkPlayground)
 
@@ -79,7 +80,7 @@ class Validator (process):
         LOGGER.log_event('Sent', 'Timeout', timeout_msg, self.replicas)
 
     def receive(msg=('Stop Running'), from_=se):
-        # output(self.proposal_per_round)
+        output(self.proposal_per_round)
         # output("Here")
         exit()
 
@@ -167,6 +168,7 @@ class Validator (process):
                 validator=validator_id
             )
             self.proposal_per_round[proposal_msg.block.round] = proposal_msg
+            # output("Proposing in round", pacemaker.current_round)
             send(('Proposal', proposal_msg), to=self.networkPlayground)
             LOGGER.log_event("Sent", "Proposal",
                              proposal_msg, self.networkPlayground)
@@ -366,6 +368,8 @@ class Validator (process):
             # output("I am on round = ", self.pacemaker.current_round,
             #        " requested = ", past_round)
             proposal_map = {}
+            # output("I need to send map of proposals from ",
+            #        past_round+1, "to ", current_round + 1)
             for r in range(past_round+1, current_round+2):
                 if r in self.proposal_per_round:
                     proposal_map[r] = self.proposal_per_round[r]
@@ -377,10 +381,14 @@ class Validator (process):
 
     def receive(msg=("Sync up proposals", proposal_map, p), from_=np):
 
-        output("RECEIVED PROPOSALS map from ", p, proposal_map)
+        # output("RECEIVED PROPOSALS map from ", p, proposal_map)
         # output(proposal_map)
+        output("i am syncing up now")
         for r in proposal_map.keys():
+            output("---------------> ", r)
             # if r not in self.sync_up_map:
+            # if self.pacemaker.current_round < r-1:
+            #     while(self.pacemaker.current_round == r-1):
             if self.pacemaker.current_round == r-1:
                 output("Before sync up", self.pacemaker.current_round)
                 proposal_message = proposal_map[r]
