@@ -29,11 +29,13 @@ class ScenarioExecutor(process):
         os.makedirs('../ledgers/config' + str(config_id))
 
         # Load json file contents into a python dictionary 'json_content'
-        scenario_file = open("scenario_test1.json")
+        # scenario_file = open("scenario_test1.json")
+        scenario_file = open("scenarios.json")
         json_content = json.load(scenario_file)
 
         # For each scenario in json file, call execute_scenario
-        for each_scenario in json_content["scenarios"]:
+        # for each_scenario in json_content["scenarios"]:
+        for each_scenario in json_content:
             self.nValidators = each_scenario['number_of_nodes']
             self.nTwins = each_scenario['number_of_twins']
             execute_scenario(each_scenario)
@@ -56,7 +58,8 @@ class ScenarioExecutor(process):
 
         nValidators = scenario['number_of_nodes']
         nTwins = scenario['number_of_twins']
-        current_scenario = scenario['scenario']
+        # current_scenario = scenario['scenario']
+        current_scenario = scenario
         # scenario variable initialization
         # self.nValidators = nValidators
         # self.nTwins = nTwins
