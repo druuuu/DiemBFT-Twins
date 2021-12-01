@@ -22,14 +22,17 @@ class NetworkPlayground(process):
 
     ##################   Helper functions   ##################
 
+    # NEEDED
     ''' returns True if node_number present in twin_to_node else return False '''
     def is_twin(node_number):
         return node_number in self.twin_to_node
 
+    # NEEDED
     ''' returns the twin of node if it exists else None '''
     def get_twin(node_num):
         return getObjectFromPath(self.node_to_twin, node_num)
 
+    # NEEDED
     ''' returns the round number of message based on message type (proposal | vote | timeout) '''
     def get_msg_round(msg, msg_type):
         if msg_type == MsgType.Proposal:
@@ -39,30 +42,16 @@ class NetworkPlayground(process):
         elif msg_type == MsgType.Timeout:
             return msg.tmo_info.round
 
-    ''' return partitions for all rounds for given msg type '''
-    def get_partitions_for_msg_type(msg_type):
-        if msg_type == MsgType.Proposal:
-            return getObjectFromPath(self.scenario, 'proposal_partitions')
-        elif msg_type == MsgType.Vote:
-            return getObjectFromPath(self.scenario, 'vote_partitions')
-        elif msg_type == MsgType.Timeout:
-            return getObjectFromPath(self.scenario, 'timeout_partitions')
 
-    # ''' return partitions for all rounds for given msg type '''
-    # def get_partitions_for_msg_type(msg_type):
-    #     if msg_type == MsgType.Proposal:
-    #         return getObjectFromPath(self.scenario, 'proposal_partitions')
-    #     elif msg_type == MsgType.Vote:
-    #         return getObjectFromPath(self.scenario, 'vote_partitions')
-    #     elif msg_type == MsgType.Timeout:
-    #         return getObjectFromPath(self.scenario, 'timeout_partitions')
-
+    # NEEDED
     def get_partitions_in_round(msg_round):
         return self.scenario["partitions"][msg_round-1]
     
+    # NEEDED
     def get_msg_types_to_drop_in_round(msg_round):
         return self.scenario["message_types"][msg_round-1]
 
+    # NEEDED
     ''' tells whether msg_type is present in list of partitions at that index '''
     def to_drop(msg_round, idx, msg_type):
         msg_types_to_drop = get_msg_types_to_drop_in_round(msg_round)[idx]
@@ -78,17 +67,12 @@ class NetworkPlayground(process):
         return False
 
 
-    ''' return partition for given round in which node p is present '''
-    def get_partition(partitions_in_round, node):
-        for partition in partitions_in_round:
-            if node in partition:
-                return partition.copy()
-        return []
-
+    # NEEDED
     def get_partition_at_idx(idx, msg_round, node):
         # idx = get_current_partition_index(msg_round, node)
         return self.scenario["partitions"][msg_round-1][idx]
 
+    # NEEDED
     ''' return partition for given round in which node p is present '''
     def get_current_partition_index(msg_round, node):
         partitions_in_round = get_partitions_in_round(msg_round)
@@ -97,6 +81,7 @@ class NetworkPlayground(process):
                 return i
         return -1
 
+    # NEEDED
     ''' If the node p is a twin, then message should appear as though it was sent by the actual node, and not the twin '''
     def replace_with_twin_if_needed(node):
         actual_sender = node
@@ -105,6 +90,7 @@ class NetworkPlayground(process):
             actual_sender = self.twin_to_node[node]
         return actual_sender
 
+    # NEEDED
     ''' sends the msg to the appropriate nodes, attaching sender node in message '''
     def send_to_nodes(msg_name, node_nums_to_send, msg, sender):
         node_pids = []
