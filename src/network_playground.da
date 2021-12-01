@@ -17,6 +17,7 @@ class NetworkPlayground(process):
         self.done_flag = False
         self.pid_to_node_number_mapping = pid_to_node_number_mapping
         self.scenario_executor_pid = scenario_executor_pid
+        self.node_to_timeout_drop_rounds = dict()
         # output(self.node_number_to_pid_mapping)
         # output(self.pid_to_node_number_mapping)
 
@@ -53,13 +54,19 @@ class NetworkPlayground(process):
 
     # NEEDED
     ''' tells whether msg_type is present in list of partitions at that index '''
-    def to_drop(msg_round, idx, msg_type):
+    def to_drop(msg_sender_number, msg_round, idx, msg_type):
         msg_types_to_drop = get_msg_types_to_drop_in_round(msg_round)[idx]
         if msg_type == MsgType.Proposal:
             if "Proposal" in msg_types_to_drop:
                 return True
         elif msg_type == MsgType.Timeout:
             if "Timeout" in msg_types_to_drop:
+                if msg_sender_number not in self.node_to_timeout_drop_rounds:
+                    self.node_to_timeout_drop_rounds[msg_sender_number] = [msg_round]
+                    return False
+                if msg_round in self.node_to_timeout_drop_rounds[msg_sender_number]:
+                    return False
+                self.node_to_timeout_drop_rounds[msg_sender_number].append(msg_round)
                 return True
         elif msg_type == MsgType.Vote:
             if "Voting" in msg_types_to_drop:
@@ -135,7 +142,7 @@ class NetworkPlayground(process):
             msg_partition_idx = self.get_current_partition_index(msg_round, msg_sender_number)
 
             # check if list of msg_types at that index contains current message type  ----- using
-            if to_drop(msg_round, msg_partition_idx, MsgType.Proposal):
+            if to_drop(msg_sender_number, msg_round, msg_partition_idx, MsgType.Proposal):
                 # drop this message, ignore
                 output("Dropping proposal from ", msg_sender_number, " to ", destination_nodes, "in round ", msg_round)
                 return
@@ -240,7 +247,7 @@ class NetworkPlayground(process):
             msg_partition_idx = self.get_current_partition_index(msg_round, msg_sender_number)
 
             # check if list of msg_types at that index contains current message type  ----- using
-            if to_drop(msg_round, msg_partition_idx, MsgType.Vote):
+            if to_drop(msg_sender_number, msg_round, msg_partition_idx, MsgType.Vote):
                 output("Dropping vote from ", msg_sender_number,
                     " to ", destination_nodes, "in round ", msg_round)
                 return
@@ -368,7 +375,7 @@ class NetworkPlayground(process):
             msg_partition_idx = self.get_current_partition_index(msg_round, msg_sender_number)
 
             # check if list of msg_types at that index contains current message type  ----- using
-            if to_drop(msg_round, msg_partition_idx, MsgType.Timeout):
+            if to_drop(msg_sender_number, msg_round, msg_partition_idx, MsgType.Timeout):
                 # drop this message, ignore
                 output("Dropping timeout from ", msg_sender_number, " to ", destination_nodes, "in round ", msg_round)
                 return
