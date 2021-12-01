@@ -88,7 +88,7 @@ class Ledger:
 
         fp = open('../ledgers/config' + str(self.config_id) +
                   "/" + self.filename, 'a+')
-        print(self.validator_id, "------------------------>", stack)
+        # print(self.validator_id, "------------------------>", stack)
         while(stack):
             block_id, payload = stack.pop()
             self.commited[block_id] = payload

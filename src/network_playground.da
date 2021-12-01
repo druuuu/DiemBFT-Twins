@@ -5,7 +5,7 @@ from logger_util import LOGGER
 
 
 class NetworkPlayground(process):
-    def setup(scenario_exector_pid, number_of_nodes: int, number_of_twins: int, scenario, node_number_to_pid_mapping, pid_to_node_number_mapping, node_to_twin, twin_to_node):
+    def setup(scenario_executor_pid, number_of_nodes: int, number_of_twins: int, scenario, node_number_to_pid_mapping, pid_to_node_number_mapping, node_to_twin, twin_to_node):
         # self.rounds = len(getObjectFromPath(scenario, 'partitions'))
         # output("########", LOGGER.networkPlayground)
         # LOGGER.np = self
@@ -16,6 +16,7 @@ class NetworkPlayground(process):
         self.node_number_to_pid_mapping = node_number_to_pid_mapping
         self.done_flag = False
         self.pid_to_node_number_mapping = pid_to_node_number_mapping
+        self.scenario_executor_pid = scenario_executor_pid
         # output(self.node_number_to_pid_mapping)
         # output(self.pid_to_node_number_mapping)
 
@@ -88,7 +89,10 @@ class NetworkPlayground(process):
         ''' if msg_round exceeds even the over estimated round, ignore '''
         if msg_round >= self.rounds + 3:
             output("Proposal Sending quit process")
-            send(('Quit process', msg_sender), to=scenario_exector_pid)
+            # output(parent(), type(parent()))
+            # output(self.scenario_executor_pid,
+            #    type(self.scena?rio_executor_pid))
+            send(('Quit Process'), to=self.scenario_executor_pid)
             return
 
         ''' When current round is after self.rounds, there is only one partition with all the nodes '''
@@ -131,7 +135,7 @@ class NetworkPlayground(process):
             msg_round-1]
         ''' if msg_round exceeds even the over estimated round, ignore '''
         if msg_round >= self.rounds + 3:
-            send(('Quit process', msg_sender), to=scenario_exector_pid)
+            send(('Quit Process'), to=self.scenario_executor_pid)
             return
 
         ''' When current round is after self.rounds, there is only one partition with all the nodes '''
@@ -186,7 +190,7 @@ class NetworkPlayground(process):
         if msg_round >= self.rounds + 3:
             output("Timeout Sending quit process")
             # output(scenario_exector_pid)
-            send(('Quit process', msg_sender), to=scenario_exector_pid)
+            send(('Quit Process'), to=self.scenario_executor_pid)
             return
 
         ''' When current round is after self.rounds, there is only one partition with all the nodes '''
@@ -227,12 +231,26 @@ class NetworkPlayground(process):
         exit()
         output("Stopped")
 
-    # def receive(msg=('Done',), from_=scenario_executor):
-    #     self.send_to_nodes()
-    #     send commmit config to scenario ...
-    #     pass
+    def receive(msg=('Sync up required', past_round, current_round), from_=msg_sender):
+        destination_nodes = list(self.pid_to_node_number_mapping.keys())
+        destination_nodes.remove(msg_sender)
+        # msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
+        # actual_sender = self.replace_with_twin_if_needed(
+        #     msg_sender_number)
+        send(('Sync up needed', past_round, current_round, msg_sender
+              ), to=destination_nodes)
 
-    ##########################################################
+        # def receive(msg=('Done',), from_=scenario_executor):
+        #     self.send_to_nodes()
+        #     send commmit config to scenario ...
+        #     pass
+
+        ##########################################################
+
+    def receive(msg=("Sync up proposals", proposal_map, requester),
+                from_=msg_sender):
+        send(("Sync up proposals", proposal_map, msg_sender),
+             to=requester)
 
     def run():
         output("Network playground running")
@@ -240,7 +258,7 @@ class NetworkPlayground(process):
         while not self.done_flag:
             # receive what messages exactly?
 
-            if await(received(('Done',), from_=scenario_exector_pid)):
+            if await(received(('Done',), from_=self.scenario_executor_pid)):
                 self.done_flag = True
 
             # if await(receive(msg, destinations)):

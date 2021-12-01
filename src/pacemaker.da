@@ -2,11 +2,12 @@ import threading
 
 from logger_util import LOGGER
 from object_types import TC, TimeoutMsg
+# from validator import Validator
 
 
 class Pacemaker:
 
-    def __init__(self, validator_id, replicas, blocktree, safety, nfaulty, delta, send_timeout_msg):
+    def __init__(self, validator_id, replicas, blocktree, safety, nfaulty, delta, send_timeout_msg, requestSyncUp):
         '''current round; // Initially zero
         last round tc; // Initially ⊥
         pending timeouts ; // Timeouts per rounda'''
@@ -27,7 +28,7 @@ class Pacemaker:
         self.safety = safety
         self.replicas = replicas
         self.send_timeout_msg = send_timeout_msg
-
+        self.requestSyncUp = requestSyncUp
     '''Function get round timer(r)'''
 
     def get_round_timer(self, r):
@@ -136,8 +137,13 @@ class Pacemaker:
             LOGGER.log('Pacemaker: advance_round_tc: returns', False)
             return False
         '''last round tc ← tc'''
+
         self.last_round_tc = tc
         '''start timer(tc.round + 1)'''
+        # if tc.round > self.current_round:
+        #     print("=================================-")
+        #     self.requestSyncUp(self.current_round, tc.round)
+
         self.start_timer(tc.round + 1)
         LOGGER.log_action('Advancing to round due to TC', self.current_round)
         '''return true'''
@@ -158,6 +164,10 @@ class Pacemaker:
         '''last round tc ← ⊥'''
         self.last_round_tc = None
         '''start timer(qc.vote info.round + 1)'''
+
+        # if qc.vote_info.round >= self.current_round:
+        #     print("==================================")
+        #     self.requestSyncUp(self.current_round, qc.vote_info.round)
         self.start_timer(qc.vote_info.round + 1)
         LOGGER.log_action('Advancing to round due to QC', self.current_round)
         '''return true'''
