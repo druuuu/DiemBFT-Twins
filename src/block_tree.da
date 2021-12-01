@@ -31,6 +31,8 @@ class BlockTree:
     def execute_and_insert(self, block):
         LOGGER.log('BlockTree: execute_and_insert', block)
         self.id_block[block.id] = block
+        # if self.validator_id == 2 or self.validator_id == 3:
+        #     print(self.validator_id, "---> ", block.round)
         if block.qc is None:
             # print("if")
             '''Ledger.speculate(b.qc.block id, b.id, b.payload)'''
@@ -108,8 +110,7 @@ class BlockTree:
         else:
             self.pending_votes[vote_idx] = [vote_msg.signature]
             self.pending_signers[vote_idx] = [vote_msg.sender]
-        if vote_msg.vote_info.round == 9:
-            print(len(self.pending_votes[vote_idx]))
+            # print(len(self.pending_votes[vote_idx]))
         '''if |pending votes[vote idx]| = 2f + 1 then'''
         if len(self.pending_votes[vote_idx]) == 2*self.f + 1:
 
@@ -139,6 +140,7 @@ class BlockTree:
         LOGGER.log('BlockTree: process_qc', qc)
         '''if qc.ledger commit info.commit state id 6= ⊥ then'''
         if qc is not None and qc.ledger_commit_info.commit_state_id != None:
+
             '''Ledger.commit(qc.vote info.parent id)'''
             self.ledger.commit(qc.vote_info.parent_id)
             '''pending block tree.prune(qc.vote info.parent id) 

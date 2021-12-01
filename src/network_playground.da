@@ -312,8 +312,8 @@ class NetworkPlayground(process):
             destination_nodes = set()
             for partition in all_partitions:
                 destination_nodes.update(partition)
-            output("Sending timeout from ", msg_sender_number,
-                   " to ", destination_nodes, "in round ", msg_round)
+            # output("Sending timeout from ", msg_sender_number,
+            #        " to ", destination_nodes, "in round ", msg_round)
             self.send_to_nodes('Timeout', list(destination_nodes),
                                timeout_msg, actual_sender_node)
             return
@@ -327,8 +327,8 @@ class NetworkPlayground(process):
         # sender node will be updated if it is a twin
         actual_sender_node = self.replace_with_twin_if_needed(
             msg_sender_number)
-        output("Sending timeout from ", msg_sender_number,
-               " to ", destination_nodes, "in round ", msg_round)
+        # output("Sending timeout from ", msg_sender_number,
+        #        " to ", destination_nodes, "in round ", msg_round)
         # send msg to all nodes in partition with the correct sender_node
         self.send_to_nodes('Timeout', destination_nodes,
                            timeout_msg, actual_sender_node)
@@ -358,6 +358,11 @@ class NetworkPlayground(process):
                 from_=msg_sender):
         send(("Sync up proposals", proposal_map, msg_sender),
              to=requester)
+
+    def receive(msg=("Done sync up"), from_=p):
+        destination_nodes = list(self.pid_to_node_number_mapping.keys())
+        destination_nodes.remove(p)
+        send(("Done sync up", p), to=destination_nodes)
 
     def run():
         output("Network playground running")
