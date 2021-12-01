@@ -17,23 +17,22 @@ class NetworkPlayground(process):
         self.done_flag = False
         self.pid_to_node_number_mapping = pid_to_node_number_mapping
         self.scenario_executor_pid = scenario_executor_pid
-        self.node_to_timeout_drop_rounds = dict()
-        # output(self.node_number_to_pid_mapping)
-        # output(self.pid_to_node_number_mapping)
+        self.node_to_timeout_drop_rounds = dict()  # Maintains record of rounds for which timeout msgs dropped for a particular node
+        
 
     ##################   Helper functions   ##################
 
-    # NEEDED
+    
     ''' returns True if node_number present in twin_to_node else return False '''
     def is_twin(node_number):
         return node_number in self.twin_to_node
 
-    # NEEDED
+    
     ''' returns the twin of node if it exists else None '''
     def get_twin(node_num):
-        return getObjectFromPath(self.node_to_twin, node_num)
+        return self.node_to_twin.get(node_num)
 
-    # NEEDED
+    
     ''' returns the round number of message based on message type (proposal | vote | timeout) '''
     def get_msg_round(msg, msg_type):
         if msg_type == MsgType.Proposal:
@@ -44,43 +43,55 @@ class NetworkPlayground(process):
             return msg.tmo_info.round
 
 
-    # NEEDED
+    ''' returns partitions for a particular round '''
     def get_partitions_in_round(msg_round):
         return self.scenario["partitions"][msg_round-1]
     
-    # NEEDED
+
+    ''' returns list of msg types to be dropped within partitions in a round '''
     def get_msg_types_to_drop_in_round(msg_round):
         return self.scenario["message_types"][msg_round-1]
 
-    # NEEDED
+
     ''' tells whether msg_type is present in list of partitions at that index '''
     def to_drop(msg_sender_number, msg_round, idx, msg_type):
         msg_types_to_drop = get_msg_types_to_drop_in_round(msg_round)[idx]
+
         if msg_type == MsgType.Proposal:
             if "Proposal" in msg_types_to_drop:
                 return True
+        
         elif msg_type == MsgType.Timeout:
             if "Timeout" in msg_types_to_drop:
+
                 if msg_sender_number not in self.node_to_timeout_drop_rounds:
+                    # Means it has never dropped timeout msgs in this round
                     self.node_to_timeout_drop_rounds[msg_sender_number] = [msg_round]
+                    # Update map and return False - to not drop this timeout msg
                     return False
+
                 if msg_round in self.node_to_timeout_drop_rounds[msg_sender_number]:
+                    # Means it has dropped a timeout msg in this round before
+                    # Hence ask to not drop
                     return False
+
+                # Update map to remember that it dropped a timeout msg for this round
                 self.node_to_timeout_drop_rounds[msg_sender_number].append(msg_round)
                 return True
+
         elif msg_type == MsgType.Vote:
             if "Voting" in msg_types_to_drop:
                 return True
+
         return False
 
 
-    # NEEDED
+    ''' get current partition at a particular index in partitions array '''
     def get_partition_at_idx(idx, msg_round, node):
-        # idx = get_current_partition_index(msg_round, node)
         return self.scenario["partitions"][msg_round-1][idx]
 
-    # NEEDED
-    ''' return partition for given round in which node p is present '''
+    
+    ''' return index of partition for given round in which node is present '''
     def get_current_partition_index(msg_round, node):
         partitions_in_round = get_partitions_in_round(msg_round)
         for i in range(len(partitions_in_round)):
@@ -88,25 +99,21 @@ class NetworkPlayground(process):
                 return i
         return -1
 
-    # NEEDED
+    
     ''' If the node p is a twin, then message should appear as though it was sent by the actual node, and not the twin '''
     def replace_with_twin_if_needed(node):
         actual_sender = node
-
         if self.is_twin(node):
             actual_sender = self.twin_to_node[node]
         return actual_sender
 
-    # NEEDED
+    
     ''' sends the msg to the appropriate nodes, attaching sender node in message '''
-    def send_to_nodes(msg_name, node_nums_to_send, msg, sender):
+    def send_to_nodes(msg_name, destination_nodes, msg, sender):
         node_pids = []
-        for node_num in node_nums_to_send:
-            # print("Reaching here")
-            node_pids.append(getObjectFromPath(
-                self.node_number_to_pid_mapping, node_num))
+        for node_num in destination_nodes:
+            node_pids.append(self.node_number_to_pid_mapping.get(node_num))
         if node_pids:
-            # output("sending ", msg_name, " to ", node_pids, "from ", sender)
             send((msg_name, msg, sender), to=node_pids)
 
     ##########################################################
