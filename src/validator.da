@@ -79,7 +79,7 @@ class Validator (process):
         LOGGER.log_event('Sent', 'Timeout', timeout_msg, self.replicas)
 
     def receive(msg=('Stop Running'), from_=se):
-        output(self.proposal_per_round)
+        # output(self.proposal_per_round)
         # output("Here")
         exit()
 
@@ -377,26 +377,41 @@ class Validator (process):
                 output("Before sync up", self.pacemaker.current_round)
                 proposal_message = proposal_map[r]
                 if proposal_message.last_round_tc != None:
+                    if proposal_message.block.qc is not None:
+
+                        process_certificate_qc(proposal_message.block.qc)
+                    if proposal_message.high_commit_qc is not None:
+                        process_certificate_qc(proposal_message.high_commit_qc)
+
                     self.pacemaker.advance_round_tc(
                         proposal_message.last_round_tc)
+
+                    self.blocktree.execute_and_insert(proposal_message.block)
+
+                    vote_msg = self.safety.make_vote(
+                        proposal_message.block, proposal_message.last_round_tc)
+
+                    # self.pacemaker.advance_round_tc(
+                    #     proposal_message.last_round_tc)
                     output("After sync up using TC")
                 elif proposal_message.block is not None and proposal_message.block.qc is not None:
                     # process_certificate_qc(proposal_message.block.qc)
 
                     if proposal_message.block.qc is not None:
-                        '''process certificate qc(P.block.qc)'''
                         process_certificate_qc(proposal_message.block.qc)
                     if proposal_message.high_commit_qc is not None:
-                        '''process certificate qc(P.high commit qc)'''
                         process_certificate_qc(proposal_message.high_commit_qc)
 
-                    '''Block-Tree.execute and insert(P) // Adds a new speculative state to the Ledger'''
+                    self.pacemaker.advance_round_tc(
+                        proposal_message.last_round_tc)
+
                     self.blocktree.execute_and_insert(proposal_message.block)
-                    '''vote msg ← Safety.make vote(P.block, P.last round tc)'''
+
                     vote_msg = self.safety.make_vote(
                         proposal_message.block, proposal_message.last_round_tc)
 
                     output("After sync up using QC")
+
                 output("After sync up", self.pacemaker.current_round)
 
             # proposal_msg = proposal_map[r]
