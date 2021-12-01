@@ -15,6 +15,7 @@ import shutil
 # print(sys.path)
 #
 
+SCENARIOS_FILE = "scenarios.json"
 
 class ScenarioExecutor(process):
     def setup(config, config_id):
@@ -30,7 +31,7 @@ class ScenarioExecutor(process):
 
         # Load json file contents into a python dictionary 'json_content'
         # scenario_file = open("scenario_test1.json")
-        scenario_file = open("scenarios.json")
+        scenario_file = open(SCENARIOS_FILE)
         json_content = json.load(scenario_file)
 
         # For each scenario in json file, call execute_scenario
