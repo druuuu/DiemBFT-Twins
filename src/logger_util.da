@@ -52,30 +52,37 @@ class LOGGER:
         )
         f.close()
 
-    def log_np_event(event, msg_type, source_node, destination_nodes, round, msg=None, *params):
+
+    def log_np_event(event, msg_type, source_node, destination_nodes, round=None, msg=None, *params):
         
         if msg != None and hasattr(msg, '__dict__'):
             msg = todict(msg)
 
         f = open(LOGGER.filename, 'a+')
-        # event, msg_type, source_node, destination_nodes, round=None
-
         p_list = []
         for p in params:
             if p != None and hasattr(p, '__dict__'):
                 p = todict(p)
             p_list.append(p)
 
+        log_parts = []
+        log_parts.extend(["Timestamp:", datetime.datetime.now(), "|"])
+        log_parts.extend(["Event:", event, "|"])
+        log_parts.extend(["MsgType:", msg_type, "|"])
+        log_parts.extend(["From:", source_node, "|"])
+
+        if destination_nodes is not None:
+            log_parts.extend(["To:", str(destination_nodes), "|"])
+        if round is not None:
+            log_parts.extend(["In Round:", round, "|"])
+        if msg is not None:
+            log_parts.extend(["Msg:", msg, "|"])
+        for param in params:
+            # log_parts.append(p_list)
+            log_parts.extend([param, "|"])
+
         print(
-            "Timestamp:", datetime.datetime.now(), "|",
-            # "ProcessId:", LOGGER.process_id, "|",
-            "Event:", event, "|",
-            "MsgType:", msg_type, "|",
-            "From:", source_node, "|",
-            "To:", str(destination_nodes), "|",
-            "In Round:", round,"|",
-            "Msg:", msg,"|",
-            p_list,
+            *log_parts,
             file=f
         )
         f.close()

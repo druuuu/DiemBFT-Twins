@@ -124,6 +124,9 @@ class NetworkPlayground(process):
         msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
         msg_round = self.get_msg_round(proposal_msg, MsgType.Proposal)
 
+        LOGGER.log_np_event('Received', 'Proposal', msg_sender_number,
+                                {}, msg_round, proposal_msg)
+
         ''' if msg_round exceeds even the over estimated round, ignore '''
         if msg_round >= self.rounds + 3:
             output("Proposal Sending quit process")
@@ -155,6 +158,8 @@ class NetworkPlayground(process):
                 # drop this message, ignore
                 output("Dropping proposal from ", msg_sender_number,
                        " to ", destination_nodes, "in round ", msg_round)
+                LOGGER.log_np_event('Dropped msg', 'Proposal', msg_sender_number,
+                                destination_nodes, msg_round, proposal_msg)
                 return
 
             ''' When msg_round <= rounds, create partitions according to the scenario '''
@@ -181,9 +186,14 @@ class NetworkPlayground(process):
         msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
         msg_round = self.get_msg_round(vote_msg, MsgType.Vote)
 
+        LOGGER.log_np_event('Received', 'Vote', msg_sender_number,
+                                destination_node_num, msg_round, vote_msg)
+
         ''' if msg_round exceeds even the over estimated round, ignore '''
         if msg_round >= self.rounds + 3:
             output("Vote Sending quit process")
+            LOGGER.log_event('Sent', 'Stop Processes', {},
+                             self.scenario_executor_pid)
             send(('Stop Processes',), to=self.scenario_executor_pid)
             return
 
@@ -209,6 +219,8 @@ class NetworkPlayground(process):
             if to_drop(msg_sender_number, msg_round, msg_partition_idx, MsgType.Vote):
                 output("Dropping vote from ", msg_sender_number,
                        " to ", destination_nodes, "in round ", msg_round)
+                LOGGER.log_np_event('Dropped msg', 'Vote', msg_sender_number,
+                                destination_nodes, msg_round, vote_msg)
                 return
 
             ''' When msg_round <= rounds, create partitions according to the scenario '''
@@ -238,9 +250,14 @@ class NetworkPlayground(process):
         msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
         msg_round = self.get_msg_round(timeout_msg, MsgType.Timeout)
 
+        LOGGER.log_np_event('Received', 'Timeout', msg_sender_number,
+                                {}, msg_round, timeout_msg)
+
         ''' if msg_round exceeds even the over estimated round, ignore '''
         if msg_round >= self.rounds + 3:
             output("Timeout Sending quit process")
+            LOGGER.log_event('Sent', 'Stop Processes', {},
+                             self.scenario_executor_pid)
             send(('Stop Processes',), to=self.scenario_executor_pid)
             return
 
@@ -265,6 +282,8 @@ class NetworkPlayground(process):
                 # drop this message, ignore
                 output("Dropping timeout from ", msg_sender_number,
                        " to ", destination_nodes, "in round ", msg_round)
+                LOGGER.log_np_event('Dropped msg', 'Timeout', msg_sender_number,
+                        destination_nodes, msg_round, timeout_msg)
                 return
 
             ''' When msg_round <= rounds, create partitions according to the scenario '''
@@ -292,17 +311,18 @@ class NetworkPlayground(process):
     #     exit()
     #     output("Stopped")
 
-    def receive(msg=('Sync up required', past_round, current_round), from_=msg_sender):
+    def receive(msg=('Sync up required', past_round, current_round), from_=msg_sender):        
+        LOGGER.log_np_event('Received', 'Sync up required', msg_sender,
+                            {}, current_round, None, past_round)
         destination_nodes = list(self.pid_to_node_number_mapping.keys())
         destination_nodes.remove(msg_sender)
         # msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
         # actual_sender = self.replace_with_twin_if_needed(
         #     msg_sender_number)
-        LOGGER.log_np_event('Sent', 'Sync up needed', msg_sender,
-                            destination_nodes, current_round, None, past_round)
         send(('Sync up needed', past_round, current_round, msg_sender
               ), to=destination_nodes)
-
+        LOGGER.log_np_event('Sent', 'Sync up needed', msg_sender,
+                            destination_nodes, current_round, None, past_round)
         # def receive(msg=('Done',), from_=scenario_executor):
         #     self.send_to_nodes()
         #     send commmit config to scenario ...
@@ -312,15 +332,26 @@ class NetworkPlayground(process):
 
     def receive(msg=("Sync up proposals", proposals_map, sync_map, requester),
                 from_=msg_sender):
+        LOGGER.log_np_event('Received', 'Sync up proposals', msg_sender,
+                            {}, None, None, requester, proposals_map, sync_map)
         send(("Sync up proposals", proposals_map, sync_map, msg_sender),
              to=requester)
+        LOGGER.log_np_event('Sent', 'Sync up proposals', msg_sender,
+                requester, None, None, proposals_map, sync_map)
+
 
     def receive(msg=("Done sync up"), from_=p):
+        LOGGER.log_np_event('Received', 'Done sync up', p,
+                {}, None, None)
         destination_nodes = list(self.pid_to_node_number_mapping.keys())
         destination_nodes.remove(p)
         send(("Done sync up", p), to=destination_nodes)
+        LOGGER.log_np_event('Sent', 'Done sync up', p,
+                destination_nodes, None, None)
 
     def receive(msg=("Kindly sync up", to_round, behind_node), from_=msg_sender):
+        LOGGER.log_np_event('Received', 'Kindly sync up', msg_sender,
+                {}, None, to_round, behind_node)
         destination = []
         destination.append(self.node_number_to_pid_mapping[behind_node])
         if behind_node in self.node_to_twin:
@@ -328,10 +359,15 @@ class NetworkPlayground(process):
                 self.node_number_to_pid_mapping[self.node_to_twin[behind_node]])
         # output("sending sync up request to ", destination)
         send(("Kindly sync up", to_round), to=destination)
+        LOGGER.log_np_event('Sent', 'Kindly sync up', msg_sender,
+                destination, None, to_round, behind_node)
 
     ''' Receive handler to inform network playground that liveness is upheld'''
     def receive(msg=('TC or QC generated'), from_=v):
+        LOGGER.log_np_event('Received', 'TC or QC generated', v,
+                None)
         self.livenessFlag = True
+        LOGGER.log_action('Set livenessFlag to:', self.livenessFlag)
 
     # def receive(msg=('Commit config', commit_config), from_=v):
         # output("Received ", commit_config, " from ", v)
