@@ -369,13 +369,17 @@ class NetworkPlayground(process):
         self.livenessFlag = True
         LOGGER.log_action('Set livenessFlag to:', self.livenessFlag)
 
+
     def receive(msg=('Commit config', commit_config), from_=v):
+        LOGGER.log_np_event('Received', 'Commit config', v,
+                None, None, commit_config)
         self.commit_config[v] = commit_config
         output("Received ", commit_config, " from ", v)
         if len(self.commit_config) == len(self.pid_to_node_number_mapping):
             # output("Final ", self.commit_config)
-
             send(("forward commit config", self.commit_config), to=parent())
+            LOGGER.log_np_event('Sent', 'forward commit config', v,
+                parent(), None, self.commit_config)
             exit()
 
     def run():
@@ -383,13 +387,25 @@ class NetworkPlayground(process):
         while not self.done_flag:
 
             if await(received(('Stop Network Playground',), from_=self.scenario_executor_pid)):
+                LOGGER.log_np_event('Received', 'Stop Network Playground', self.scenario_executor_pid, None, None)
                 self.done_flag = True
+                LOGGER.log_action('Set done_flag to:', self.done_flag)
+            
             elif await(self.livenessFlag):
+                LOGGER.log_np_event('Flag changed', 'self.livenessFlag', None, None, None)
                 self.livenessFlag = False
+                LOGGER.log_action('Set livenessFlag to:', self.livenessFlag)
+
             elif await(received(('Commit config', commit_config,))):
+                LOGGER.log_np_event('Received', 'Commit config', None, None, commit_config)
                 output("received something")
+
             elif timeout(10):
                 send(('Stop Processes',), to=self.scenario_executor_pid)
+                LOGGER.log_action(" Timed out ", None)
+                LOGGER.log_np_event('Sent', 'Stop Processes', self.scenario_executor_pid, None, None)
+                # LOGGER.log_np_event('Sent', 'Stop Processes', self.scenario_executor_pid, None, None)
+                LOGGER.log_action(" ******************** Liveness Violated ******************** ", None)
                 output("liveness violated")
                 # output("Final ", self.commit_config)
                 # exit()
