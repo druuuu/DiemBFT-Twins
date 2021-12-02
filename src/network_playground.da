@@ -53,7 +53,7 @@ class NetworkPlayground(process):
         return self.scenario["message_types"][msg_round-1]
 
 
-    ''' tells whether msg_type is present in list of partitions at that index '''
+    ''' tells whether msg_type is eligible for intra partition dropping '''
     def to_drop(msg_sender_number, msg_round, idx, msg_type):
         msg_types_to_drop = get_msg_types_to_drop_in_round(msg_round)[idx]
 
@@ -145,10 +145,10 @@ class NetworkPlayground(process):
                     destination_nodes.add(node_number)
 
         else:
-            # get index of partition in which msg_sender lies ---  using get_current_partition_index
+            # get index of partition in which msg_sender lies 
             msg_partition_idx = self.get_current_partition_index(msg_round, msg_sender_number)
 
-            # check if list of msg_types at that index contains current message type  ----- using
+            # check if msg is eligible for intra partition dropping
             if to_drop(msg_sender_number, msg_round, msg_partition_idx, MsgType.Proposal):
                 # drop this message, ignore
                 output("Dropping proposal from ", msg_sender_number, " to ", destination_nodes, "in round ", msg_round)
@@ -197,10 +197,10 @@ class NetworkPlayground(process):
 
         else:
 
-            # get index of partition in which msg_sender lies ---  using get_current_partition_index
+            # get index of partition in which msg_sender lies
             msg_partition_idx = self.get_current_partition_index(msg_round, msg_sender_number)
 
-            # check if list of msg_types at that index contains current message type  ----- using
+            # check if msg is eligible for intra partition dropping
             if to_drop(msg_sender_number, msg_round, msg_partition_idx, MsgType.Vote):
                 output("Dropping vote from ", msg_sender_number,
                     " to ", destination_nodes, "in round ", msg_round)
@@ -253,7 +253,7 @@ class NetworkPlayground(process):
             # get index of partition in which msg_sender lies ---  using get_current_partition_index
             msg_partition_idx = self.get_current_partition_index(msg_round, msg_sender_number)
 
-            # check if list of msg_types at that index contains current message type  ----- using
+            # check if msg is eligible for intra partition dropping
             if to_drop(msg_sender_number, msg_round, msg_partition_idx, MsgType.Timeout):
                 # drop this message, ignore
                 output("Dropping timeout from ", msg_sender_number, " to ", destination_nodes, "in round ", msg_round)
