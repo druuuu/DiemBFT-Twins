@@ -323,8 +323,9 @@ class NetworkPlayground(process):
                 self.done_flag = True
             elif await(self.livenessFlag):
                 self.livenessFlag = False
-            elif timeout(6):
+            elif timeout(10):
                 output("liveness violated")
+                exit()
                 break
 
         exit()

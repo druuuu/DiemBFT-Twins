@@ -17,7 +17,7 @@ class Ledger:
         self.request_cache = request_cache
         self.node_number = node_number
         self.filename = "validator_" + str(node_number) + ".ledger"
-        fp = open('../ledgers/config' + str(config_id) +
+        fp = open('../ledgers/config' + str(self.config_id) +
                   '/scenario' + str(self.scenario_id) +
                   "/" + self.filename, 'w')
         fp.close()
@@ -94,7 +94,8 @@ class Ledger:
                 break
             current_block_to_commit = self.id_to_block[current_block_to_commit.qc.vote_info.id]
 
-        fp = open('../ledgers/scenario' + str(self.config_id) +
+        fp = open('../ledgers/config' + str(self.config_id) +
+                  '/scenario' + str(self.scenario_id) +
                   "/" + self.filename, 'a+')
         # print(self.validator_id, "------------------------>", stack)
         while(stack):
