@@ -5,11 +5,18 @@ from logger_util import LOGGER
 
 
 class NetworkPlayground(process):
-    def setup(scenario_executor_pid, number_of_nodes: int, number_of_twins: int, scenario, node_number_to_pid_mapping, pid_to_node_number_mapping, node_to_twin, twin_to_node):
+    def setup(scenario_executor_pid, number_of_nodes: int, number_of_twins: int, scenario, node_number_to_pid_mapping, pid_to_node_number_mapping, node_to_twin, twin_to_node, config_id, scenario_id):
         # self.rounds = len(getObjectFromPath(scenario, 'partitions'))
         # output("########", LOGGER.networkPlayground)
-        # LOGGER.np = self
+        LOGGER.np = self
+        LOGGER.scenario_executor = scenario_executor_pid
         # output("########", LOGGER.networkPlayground)
+
+        LOGGER.process_id = "network_playground"
+        LOGGER.filename = '../logs/config' + str(config_id) + '/' \
+            + '/scenario'+str(scenario_id)+'/' \
+            + LOGGER.process_id + ".log"
+
         self.scenario = scenario
         self.rounds = len(scenario['leaders'])-3
         self.commit_config = dict()
@@ -63,8 +70,8 @@ class NetworkPlayground(process):
                     # Means it has never dropped timeout msgs in this round
                     self.node_to_timeout_drop_rounds[msg_sender_number] = [
                         msg_round]
-                    # Update map and return False - to not drop this timeout msg
-                    return False
+                    # Update map and return False - to drop this timeout msg
+                    return True
 
                 if msg_round in self.node_to_timeout_drop_rounds[msg_sender_number]:
                     # Means it has dropped a timeout msg in this round before
@@ -120,6 +127,8 @@ class NetworkPlayground(process):
         ''' if msg_round exceeds even the over estimated round, ignore '''
         if msg_round >= self.rounds + 3:
             output("Proposal Sending quit process")
+            LOGGER.log_event('Sent', 'Quit Process', {},
+                             self.scenario_executor_pid)
             send(('Stop Processes',), to=self.scenario_executor_pid)
             return
 
@@ -161,6 +170,8 @@ class NetworkPlayground(process):
         if len(destination_nodes) > 0:
             output("Sending proposal from ", msg_sender_number,
                    " to ", destination_nodes, "in round ", msg_round)
+            LOGGER.log_np_event('Sent', 'Proposal', actual_sender_node,
+                                destination_nodes, msg_round, proposal_msg)
             self.send_to_nodes('Proposal', destination_nodes,
                                proposal_msg, actual_sender_node)
 
@@ -215,7 +226,9 @@ class NetworkPlayground(process):
 
         if len(destination_nodes) > 0:
 
-            output("Sending vote from ", msg_sender_number,
+            LOGGER.log_np_event('Sent', 'Vote', msg_sender_number,
+                                destination_nodes, msg_round, vote_msg)
+            output('Sent', msg_sender_number,
                    " to ", destination_nodes, "in round ", msg_round)
             self.send_to_nodes('Vote', destination_nodes,
                                vote_msg, actual_sender_node)
@@ -267,6 +280,8 @@ class NetworkPlayground(process):
         if len(destination_nodes) > 0:
             output("Sending timeout from ", msg_sender_number,
                    " to ", destination_nodes, "in round ", msg_round)
+            LOGGER.log_np_event('Sent', 'Timeout', actual_sender_node,
+                                destination_nodes, msg_round, timeout_msg)
             self.send_to_nodes('Timeout', destination_nodes,
                                timeout_msg, actual_sender_node)
 
@@ -282,6 +297,8 @@ class NetworkPlayground(process):
         # msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
         # actual_sender = self.replace_with_twin_if_needed(
         #     msg_sender_number)
+        LOGGER.log_np_event('Sent', 'Sync up needed', msg_sender,
+                            destination_nodes, current_round, None, past_round)
         send(('Sync up needed', past_round, current_round, msg_sender
               ), to=destination_nodes)
 

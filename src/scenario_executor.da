@@ -4,6 +4,7 @@ from config_test_generator import config_tests
 from ScenarioGenerator import ScenarioGenerator
 import sys
 import json
+from logger_util import LOGGER
 from validator import Validator
 from cryptography import Cryptography
 from network_playground import NetworkPlayground
@@ -162,6 +163,12 @@ class ScenarioExecutor(process):
     # # TODO: Safety check function
 
     def setup(config, config_id, scenario, scenario_id):
+        LOGGER.scenario_executor = self
+        LOGGER.process_id = "scenario_executor"
+        LOGGER.filename = '../logs/config' + str(config_id) + '/' \
+            + '/scenario'+str(scenario_id)+'/' \
+            + LOGGER.process_id + ".log"
+
         self.scenario = scenario
         self.scenario_id = scenario_id
         self.config = config
@@ -195,6 +202,7 @@ class ScenarioExecutor(process):
         # twins = None
         # Create network playground object
         networkPlayground = new(NetworkPlayground, num=1)
+        LOGGER.np = networkPlayground
 
         # Generate Validator keys
         for personal_id, validator in enumerate(validators):
@@ -225,14 +233,16 @@ class ScenarioExecutor(process):
 
         # Setup network_playground
         setup(networkPlayground, (self, nValidators, nTwins, self.scenario,
-                                  node_number_to_pid_mapping, pid_to_node_number_mapping, node_to_twin, twin_to_node))
+                                  node_number_to_pid_mapping, pid_to_node_number_mapping, node_to_twin, twin_to_node, self.config_id, self.scenario_id))
         # output(twins)
         # Start all processes
         start(networkPlayground | twins | validators)
-
+        LOGGER.log_action(
+            'STARTED validators, twins and network playground', None)
         await(received(('Stop Processes',)))
 
         output("RECEIVED QUIT REQUEST")
+        LOGGER.log_event('RECEIVED', 'QUIT REQUEST', {}, None)
 
         send(('Stop Running',), to=validators | twins)
 
@@ -241,6 +251,10 @@ class ScenarioExecutor(process):
     def receive(msg=("forward commit config", commit_config), from_=np):
         send(('Ask main to end',), to=parent())
         exit()
+        # send(("done",), to=validators)
+        # send(("done",), to=twins)
+        # send(('done',), to=(validators | twins))
+# send(('Quit Process'), to=self.scenario_executor_pid)
 
 
 def is_config_valid(config):
