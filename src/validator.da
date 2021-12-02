@@ -18,8 +18,7 @@ import os
 
 class Validator (process):
     def requestSyncUp(past_round, current_round):
-        output("Requesting sync up ", self.validator_id,
-               " for rounds ", past_round, current_round)
+
         send(('Sync up required', past_round,
               current_round), to=self.networkPlayground)
 
@@ -92,7 +91,6 @@ class Validator (process):
 
     def receive(msg=('Stop Running',), from_=se):
         # output(self.proposal_per_round)
-        output("Here")
         send(('Commit config', self.commit_config,), to=self.networkPlayground)
         exit()
 
@@ -364,7 +362,15 @@ class Validator (process):
                 send(("Done sync up"), to=self.networkPlayground)
                 # self.syncUpFlag = True
                 # await(not self.syncUpFlag)
-            # elif timeout_msg.tmo_info.round < self.pacemaker.current_round:
+            elif timeout_msg.tmo_info.round < self.pacemaker.current_round:
+                # output(self.validator_id)
+                # output(timeout_sender, "You need to sync up from ", timeout_msg.tmo_info.round,
+                #        " to ", self.pacemaker.current_round)
+                send(("kindly sync up", self.pacemaker.current_round -
+                      1, timeout_sender), to=self.networkPlayground)
+
+                # send(('Sync up needed', timeout_msg.tmo_info.round, (self.pacemaker.current_round-1), timeout_sender
+                #       ), to=self)
                 # output(timeout_msg.tmo_info.round,
                 #        self.pacemaker.current_round)
                 # output("******* ", timeout_sender, "You need to sync up to round ",
@@ -373,7 +379,6 @@ class Validator (process):
                 #       timeout_sender), to=self.networkPlayground)
 
             self.pacemaker.advance_round_tc(timeout_msg.last_round_tc)
-
             '''tc ← Pacemaker.process remote timeout(M)'''
             tc = self.pacemaker.process_remote_timeout(timeout_msg)
             '''if tc != ⊥ then'''
@@ -438,8 +443,8 @@ class Validator (process):
         # output("RECEIVED PROPOSALS map from ", p, proposals_map, sc_map)
         # output(proposal_map)
         # output(self.node_number, "received ", proposal_map)
-        output("i am syncing up now")
-
+        # output("i am syncing up now")
+        # output(sc_map, self.pacemaker.current_round)
         for r in sc_map.keys():
 
             if self.pacemaker.current_round == r:
@@ -487,16 +492,21 @@ class Validator (process):
                         reqd_timeout_msg.last_round_tc)
                     self.pacemaker.advance_round_tc(reqd_tc)
                     output("After sync up using TC")
-                output("After sync up", self.pacemaker.current_round)
+                # output("After sync up", self.pacemaker.current_round)
 
-    def receive(msg=("Kindly sync up", to_round), from_=np):
+    def receive(msg=("kindly sync up", to_round), from_=np):
         # output("I have to sync up from ",
+        # output("was asked to sync up to ", to_round,
+        #    'currently on ', self.pacemaker.current_round)
+        # output()
         #        self.pacemaker.current_round, "to ", to_round)
         if self.pacemaker.current_round <= to_round:
             # break
-            output("I was asked to sync up to ", to_round)
+            # output("I was asked to sync up to ", to_round)
             requestSyncUp(self.pacemaker.current_round, to_round)
             await(self.pacemaker.current_round > to_round)
+
+    # def receive(msg=())
 
 
 class ValidatorFI (process, Validator):

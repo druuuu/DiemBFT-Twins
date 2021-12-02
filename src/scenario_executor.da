@@ -18,149 +18,10 @@ from pprint import pprint
 # sys.path.append(os.path.dirname(cwd)+'/config')
 # print(sys.path)
 
-SCENARIOS_FILE = "scenarios.json"
+SCENARIOS_FILE = "scenarios8.json"
 
 
 class ScenarioExecutor(process):
-    # def setup(config, config_id):
-    #     self.nValidators = None
-    #     self.nTwins = None
-    #     pass
-
-    # def run2():
-
-    #     os.makedirs('../logs/config' + str(config_id))
-    #     os.makedirs('../ledgers/config' + str(config_id))
-
-    #     # Load json file contents into a python dictionary 'json_content'
-    #     # scenario_file = open("scenario_test1.json")
-    #     scenario_file = open(SCENARIOS_FILE)
-    #     json_content = json.load(scenario_file)
-
-    #     # For each scenario in json file, call execute_scenario
-    #     # for each_scenario in json_content["scenarios"]:
-    #     for each_scenario in json_content:
-    #         self.nValidators = each_scenario['number_of_nodes']
-    #         self.nTwins = each_scenario['number_of_twins']
-    #         execute_scenario(each_scenario)
-    #         # break
-    #     output("REACHED END")
-
-    #     # output("Stopping ")
-    #     # exit()
-    #     # output("stopped")
-    #     # await()
-    #     # start(twins)
-    #     # start(validators)
-
-    #     # TODO: await all process have been ended
-    #     # TODO: send 'Done' to network_playground
-    #     # TODO: stop the network_playground
-
-    #     # Receive handler : Network Playground asks to quit process 'p'
-
-    # def execute_scenario(scenario):
-
-    #     nValidators = scenario['number_of_nodes']
-    #     nTwins = scenario['number_of_twins']
-    #     # current_scenario = scenario['scenario']
-    #     current_scenario = scenario
-    #     # scenario variable initialization
-    #     # self.nValidators = nValidators
-    #     # self.nTwins = nTwins
-    #     self.stopped_processes = {}
-    #     leaders = current_scenario['leaders']
-
-    #     validator_private_keys = {}
-    #     validator_public_keys = {}
-    #     node_number_to_pid_mapping = {}
-    #     pid_to_node_number_mapping = {}
-    #     twin_to_node = {}
-    #     node_to_twin = {}
-
-    #     # output(nValidators)
-    #     # output(nTwins)
-    #     output(current_scenario)
-
-    #     validators = new(Validator, num=nValidators)
-    #     # twins = None
-    #     # Create network playground object
-    #     networkPlayground = new(NetworkPlayground, num=1)
-
-    #     # Generate Validator keys
-    #     for personal_id, validator in enumerate(validators):
-    #         private_key, public_key = Cryptography.generate_key()
-    #         validator_private_keys[personal_id] = private_key
-    #         validator_public_keys[personal_id] = public_key
-    #         node_number_to_pid_mapping[personal_id] = validator
-    #         pid_to_node_number_mapping[validator] = personal_id
-
-    #     # Setup the non-faulty validators
-    #     for personal_id, validator in enumerate(validators):
-    #         setup(validator, (config, config_id, personal_id, list(validators), validator_private_keys[personal_id], validator_public_keys,
-    #                           leaders, networkPlayground, personal_id, self))
-
-    #     # Define create_twins funtion
-    #     # def create_twins():
-    #     twins = new(Validator, num=nTwins)
-    #     for personal_id, twin in enumerate(twins):
-    #         setup(twin, (config, config_id, personal_id, list(validators), validator_private_keys[personal_id], validator_public_keys,
-    #                      leaders, networkPlayground, personal_id+nValidators, self))
-    #         twin_to_node[personal_id+nValidators] = personal_id
-    #         node_to_twin[personal_id] = personal_id+nValidators
-    #         node_number_to_pid_mapping[personal_id+nValidators] = twin
-    #         pid_to_node_number_mapping[twin] = personal_id+nValidators
-
-    #     # Create the twins
-    #     # create_twins()
-    #     self.nValidators = validators
-    #     self.nTwins = twins
-    #     # Setup network_playground
-    #     setup(networkPlayground, (self, nValidators, nTwins, current_scenario,
-    #                               node_number_to_pid_mapping, pid_to_node_number_mapping, node_to_twin, twin_to_node))
-    #     # output(twins)
-    #     # Start all processes
-    #     start(networkPlayground | twins | validators)
-
-    #     # await(received(('NP stopped',), from_=networkPlayground))
-    #     # await(received(('Done',), from_=parent()))
-    #     await(some(received(('Quit Process'), from_=networkPlayground)))
-    #     output("network asked me to quit")
-    #     send(('done', "Done"), to=self.nValidators | self.nTwins)
-
-    # def receive(msg=('Quit Process'), from_=np):
-    #     output("RECEIVED REQUEST TO QUIT PROCESSES")
-    #     # output(self.nValidators, type(self.nValidators))
-    #     # output(self.nValidators)
-    #     # send(('Done',), to=validators)
-    #     send(('done', "Done"), to=self.nValidators | self.nTwins)
-    #     # send()
-    #     # if await(received(('Quit Process'), from_=networkPlayground)):
-    #     #     output("madlmasldmalmsdc")
-    #     #     if p not in self.stopped_processes:
-
-    #     #         send(('Stop Running'), to=p)
-    #     #         output("asked process ", p)
-    #     #         self.stopped_processes[p] = True
-
-    #     #     if len(self.stopped_processes) == self.nValidators + self.nTwins:
-
-    #     #         send(("Stop Network Playground"), to=np)
-
-    #     # def receive(msg=('Q'), from_=np):
-    #     #     output("madlmasldmalmsdc")
-    #     #     if p not in self.stopped_processes:
-
-    #     #         send(('Stop Running'), to=p)
-    #     #         output("asked process ", p)
-    #     #         self.stopped_processes[p] = True
-
-    #     #     if len(self.stopped_processes) == self.nValidators + self.nTwins:
-
-    #     #         send(("Stop Network Playground"), to=np)
-    # # TODO: Retrieve process and stop it (depends if p is personal_id or process_id)
-    # # TODO: Receive handler : Commit config
-    # # TODO: Safety check function
 
     def setup(config, config_id, scenario, scenario_id):
         LOGGER.scenario_executor = self
@@ -250,11 +111,30 @@ class ScenarioExecutor(process):
 
     def receive(msg=("forward commit config", commit_config), from_=np):
         send(('Ask main to end',), to=parent())
+        output("Final ", commit_config)
+
+        # output(commit_config)
         exit()
         # send(("done",), to=validators)
         # send(("done",), to=twins)
         # send(('done',), to=(validators | twins))
 # send(('Quit Process'), to=self.scenario_executor_pid)
+
+    def safety_test(commit_config):
+        number_of_ledgers = len(commit_config)
+        max_rounds = -1
+        for ledger in commit_config:
+            max_rounds = max(max_rounds, len(ledger))
+        for r in range(max_rounds):
+            curr = None
+            for l in commit_config:
+                if curr and r < len(l):
+                    if curr != l[r]:
+                        return False
+                if not curr and r < len(l):
+                    curr = l[r]
+
+        return True
 
 
 def is_config_valid(config):

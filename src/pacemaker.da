@@ -81,10 +81,10 @@ class Pacemaker:
         tmo_info = tmo.tmo_info
         '''if tmo info.round < current round then
             return ⊥'''
+
         if tmo_info.round < self.current_round:
             LOGGER.log('Pacemaker: process_remote_timeout: returns', None)
             return None
-
         '''if tmo info.sender 6∈ pending timeouts[tmo info.round].senders then
             pending timeouts[tmo info.round] ← pending timeouts[tmo info.round] ∪ {tmo info}'''
         if tmo_info.round not in self.pending_timeouts:
