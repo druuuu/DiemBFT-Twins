@@ -18,7 +18,7 @@ from pprint import pprint
 # sys.path.append(os.path.dirname(cwd)+'/config')
 # print(sys.path)
 
-SCENARIOS_FILE = "scenarios8.json"
+SCENARIOS_FILE = "scenario_temp.json"
 
 
 class ScenarioExecutor(process):
