@@ -12,22 +12,25 @@ from mem_pool import MemPool
 from object_types import FailType, MsgType, ProposalMsg
 from pacemaker import Pacemaker
 from safety import Safety
+import os
+# from src.network_playground import NetworkPlayground
 
 
 class Validator (process):
     def requestSyncUp(past_round, current_round):
-        output("Requesting sync up ", self.validator_id,
-               " for rounds ", past_round, current_round)
+
         send(('Sync up required', past_round,
               current_round), to=self.networkPlayground)
 
-    def setup(config, config_id: int, validator_id: int, replicas: list,  private_key, public_keys_validators, leaders, networkPlayground, node_number):
+    def setup(config, config_id: int, scenario, scenario_id, validator_id: int, replicas: list,  private_key, public_keys_validators, leaders, networkPlayground, node_number, scenario_executor_pid):
         output("Validator with id ", validator_id)
+
         LOGGER.replicas = replicas
         # LOGGER.process_id = "validator_" + str(validator_id)
         LOGGER.process_id = "validator_" + str(node_number)
         # LOGGER.clients = clients
         LOGGER.filename = '../logs/config' + str(config_id) + '/' \
+            + '/scenario'+str(scenario_id)+'/' \
             + LOGGER.process_id + ".log"
 
         LOGGER.log_action("Initial configuration", config)
@@ -36,9 +39,10 @@ class Validator (process):
         self.request_cache = dict()
         self.recently_committed_block_ids = list()
         self.should_start_new_round = True
+        self.commit_config = []
 
         self.ledger = Ledger(
-            config_id, validator_id, self.id_block, self.recently_committed_block_ids, self.request_cache, node_number)
+            config_id, scenario_id, validator_id, self.id_block, self.recently_committed_block_ids, self.request_cache, node_number, self.commit_config)
         self.blocktree = BlockTree(
             validator_id, replicas, self.ledger, config['nfaulty'], self.id_block)
         self.safety = Safety(validator_id, replicas,
@@ -54,8 +58,14 @@ class Validator (process):
         Cryptography.replicas = self.replicas
         Cryptography.public_keys_validators = self.public_keys_validators
 
-        self.proposal_per_round = {}
+        self.proposals_map = {}
         self.sync_up_map = {}
+        # self.qc_map = {}
+        # self.tc_map = {}
+        # self.sync_up_map = {}
+
+        self.doneFlag = False
+        self.scenario_executor_pid = scenario_executor_pid
 
         if config['failure_config'].seed is None:
             config['failure_config'].seed = random.randint(10000, 100000)
@@ -79,19 +89,44 @@ class Validator (process):
         send(('Timeout', timeout_msg), to=self.networkPlayground)
         LOGGER.log_event('Sent', 'Timeout', timeout_msg, self.replicas)
 
-    def receive(msg=('Stop Running'), from_=se):
-        output(self.proposal_per_round)
-        # output("Here")
+    def receive(msg=('Stop Running',), from_=se):
+        # output(self.proposal_per_round)
+        send(('Commit config', self.commit_config,), to=self.networkPlayground)
         exit()
+
+    # def receive(msg=('done', "Done"), from_=se):
+    #     output("setting await flag")
+    #     self.doneFlag = True
+    #     output("I was asked to stop")
+
+    # def receive(msg=('TC or QC generated'), from_=v):
+    #     self.livenessFlag = True
 
     '''Procedure start event processing(M)'''
     def run():
         self.pacemaker.start_timer(1)
         LOGGER.log(replicas[validator_id])
         process_new_round_event(None)
-        await(received(('Done',), from_=parent()))
-        self.pacemaker.stop_timer(self.pacemaker.current_round)
-        output("Validator", self.validator_id, "is exiting")
+        # self.pacemaker.stop_timer(self.pacemaker.current_round)
+        # await(received(('done',)))
+        # await(received(('done',)))
+        # output("await done")
+        # await(received(('done',), from_=parent()))
+        while True:
+            #     # if await(received(('done',), from_=se)):
+            #     #     self.done_flag = True
+            #     if await(received(('done',), from_=self.networkPlayground)):
+            #         break
+            if await(received(('done',))):
+                output("reached here")
+                break
+        #         # self.livenessFlag = False
+            elif timeout(100):
+                output("process too long")
+                break
+        #         # output("liveness violated")
+        output('terminating')
+        exit()
 
     '''Procedure process certificate qc(qc)'''
     def process_certificate_qc(qc):
@@ -167,7 +202,11 @@ class Validator (process):
                 high_commit_qc=self.blocktree.high_commit_qc,
                 validator=validator_id
             )
-            self.proposal_per_round[proposal_msg.block.round] = proposal_msg
+            # if self.pacemaker.current_round-1 not in self.proposal_per_round:
+            #     self.proposal_per_round[self.pacemaker.current_round -
+            #                             1] = ["P", proposal_msg]
+            # self.proposal_per_round[proposal_msg.block.round] = [
+            #     "P", proposal_msg]
             # output("Proposing in round", pacemaker.current_round)
             send(('Proposal', proposal_msg), to=self.networkPlayground)
             LOGGER.log_event("Sent", "Proposal",
@@ -177,6 +216,7 @@ class Validator (process):
 
     '''Procedure process proposal msg(P)'''
     def receive(msg=('Proposal', proposal_msg, proposer), from_=p):
+        # output("########## ", self.sync_up_map)
         LOGGER.log_event("Received", "Proposal", proposal_msg, p)
         signature_verified = Cryptography.get_verified_message(
             proposal_msg.signature, public_keys_validators[proposer])
@@ -202,6 +242,7 @@ class Validator (process):
                 # await(not self.syncUpFlag)
                 await(self.pacemaker.current_round > proposal_msg.block.qc.vote_info.round)
                 send(("Done sync up"), to=self.networkPlayground)
+
             self.should_start_new_round = False
             # output("This message was proposed by ", proposal_msg.block.qc)
             if proposal_msg.block.qc is not None and proposer != validator_id:
@@ -233,7 +274,10 @@ class Validator (process):
             #             "Not processing the Proposal message as transactions are not valid", None)
             #         return
 
-            self.proposal_per_round[proposal_msg.block.round] = proposal_msg
+            # create a proposal[round_number] = proposal_message entry
+            self.proposals_map[proposal_msg.block.round] = proposal_msg
+            if proposal_msg.block.round-1 not in self.sync_up_map:
+                self.sync_up_map[proposal_msg.block.round-1] = ["P"]
 
             if len(proposal_msg.block.payload) == 0:
                 self.should_start_new_round = True
@@ -280,6 +324,7 @@ class Validator (process):
                 LOGGER.log_action("Generated a Quorum Certificate", qc)
                 '''process certificate qc(qc)
                 process new round event(⊥)'''
+                send(('TC or QC generated'), to=self.networkPlayground)
                 output("*****QC generated for round ", qc.vote_info.round)
                 process_certificate_qc(qc)
                 process_new_round_event(None)
@@ -317,7 +362,15 @@ class Validator (process):
                 send(("Done sync up"), to=self.networkPlayground)
                 # self.syncUpFlag = True
                 # await(not self.syncUpFlag)
-            # elif timeout_msg.tmo_info.round < self.pacemaker.current_round:
+            elif timeout_msg.tmo_info.round < self.pacemaker.current_round:
+                # output(self.validator_id)
+                # output(timeout_sender, "You need to sync up from ", timeout_msg.tmo_info.round,
+                #        " to ", self.pacemaker.current_round)
+                send(("kindly sync up", self.pacemaker.current_round -
+                      1, timeout_sender), to=self.networkPlayground)
+
+                # send(('Sync up needed', timeout_msg.tmo_info.round, (self.pacemaker.current_round-1), timeout_sender
+                #       ), to=self)
                 # output(timeout_msg.tmo_info.round,
                 #        self.pacemaker.current_round)
                 # output("******* ", timeout_sender, "You need to sync up to round ",
@@ -326,13 +379,17 @@ class Validator (process):
                 #       timeout_sender), to=self.networkPlayground)
 
             self.pacemaker.advance_round_tc(timeout_msg.last_round_tc)
-
             '''tc ← Pacemaker.process remote timeout(M)'''
             tc = self.pacemaker.process_remote_timeout(timeout_msg)
             '''if tc != ⊥ then'''
             if tc is not None:
+                self.sync_up_map[timeout_msg.tmo_info.round] = [
+                    "T", timeout_msg, tc]
+                send(('TC or QC generated'), to=self.networkPlayground)
+
                 LOGGER.log_action("Generated a Timeout Certificate", tc)
                 '''process certificate qc(qc)
+
                 process new round event(⊥)'''
                 output("TC GENERATED FOR ROUND ", tc.round)
                 self.pacemaker.advance_round_tc(tc)
@@ -367,85 +424,89 @@ class Validator (process):
             # output("I WILL HELP")
             # output("I am on round = ", self.pacemaker.current_round,
             #        " requested = ", past_round)
-            proposal_map = {}
+            sc_map = {}
             # output("I need to send map of proposals from ",
             #        past_round+1, "to ", current_round + 1)
-            for r in range(past_round+1, current_round+2):
-                if r in self.proposal_per_round:
-                    proposal_map[r] = self.proposal_per_round[r]
-            send(("Sync up proposals", proposal_map, requester),
+            # output("***** ", self.sync_up_map, past_round -
+            #        1, current_round, self.proposals_map)
+            for r in range(past_round-1, current_round+1):
+
+                if r in self.sync_up_map:
+                    sc_map[r] = self.sync_up_map[r]
+            send(("Sync up proposals", self.proposals_map, sc_map, requester),
                  to=self.networkPlayground)
             await(received(("Done sync up", requester), from_=self.networkPlayground))
             # send(('Vote', vote_msg, next_leader),
             #      to=self.networkPlayground)
 
-    def receive(msg=("Sync up proposals", proposal_map, p), from_=np):
-
-        # output("RECEIVED PROPOSALS map from ", p, proposal_map)
+    def receive(msg=("Sync up proposals", proposals_map, sc_map, p), from_=np):
+        # output("RECEIVED PROPOSALS map from ", p, proposals_map, sc_map)
         # output(proposal_map)
-        output("i am syncing up now")
-        for r in proposal_map.keys():
-            output("---------------> ", r)
-            # if r not in self.sync_up_map:
-            # if self.pacemaker.current_round < r-1:
-            #     while(self.pacemaker.current_round == r-1):
-            if self.pacemaker.current_round == r-1:
-                output("Before sync up", self.pacemaker.current_round)
-                proposal_message = proposal_map[r]
-                if proposal_message.last_round_tc != None:
-                    if proposal_message.block.qc is not None:
+        # output(self.node_number, "received ", proposal_map)
+        # output("i am syncing up now")
+        # output(sc_map, self.pacemaker.current_round)
+        for r in sc_map.keys():
 
-                        process_certificate_qc(proposal_message.block.qc)
-                    if proposal_message.high_commit_qc is not None:
-                        process_certificate_qc(proposal_message.high_commit_qc)
+            if self.pacemaker.current_round == r:
+                reqd_msg = sc_map[r]
+                if reqd_msg[0] == "P":
+                    if r not in proposals_map and r+1 not in proposals_map:
+                        return
+                    # reqd_proposal_message = proposal_map[r-1][1]
+                    current_round_proposal = proposals_map[r]
+                    next_round_proposal = proposals_map[r+1]
 
-                    self.pacemaker.advance_round_tc(
-                        proposal_message.last_round_tc)
-
-                    self.blocktree.execute_and_insert(proposal_message.block)
+                    if r not in self.proposals_map:
+                        self.blocktree.execute_and_insert(
+                            current_round_proposal.block)
+                        self.proposals_map[self.pacemaker.current_round] = current_round_proposal
 
                     vote_msg = self.safety.make_vote(
-                        proposal_message.block, proposal_message.last_round_tc)
+                        current_round_proposal.block, current_round_proposal.last_round_tc)
 
-                    # self.pacemaker.advance_round_tc(
-                    #     proposal_message.last_round_tc)
-                    output("After sync up using TC")
-                elif proposal_message.block is not None and proposal_message.block.qc is not None:
-                    # process_certificate_qc(proposal_message.block.qc)
-
-                    if proposal_message.block.qc is not None:
-                        process_certificate_qc(proposal_message.block.qc)
-                    if proposal_message.high_commit_qc is not None:
-                        process_certificate_qc(proposal_message.high_commit_qc)
+                    if next_round_proposal.block.qc is not None:
+                        process_certificate_qc(next_round_proposal.block.qc)
+                    if next_round_proposal.high_commit_qc is not None:
+                        process_certificate_qc(
+                            next_round_proposal.high_commit_qc)
 
                     self.pacemaker.advance_round_tc(
-                        proposal_message.last_round_tc)
-
-                    self.blocktree.execute_and_insert(proposal_message.block)
-
-                    vote_msg = self.safety.make_vote(
-                        proposal_message.block, proposal_message.last_round_tc)
+                        next_round_proposal.last_round_tc)
 
                     output("After sync up using QC")
 
-                output("After sync up", self.pacemaker.current_round)
+                    # self.blocktree.execute_and_insert(proposal_message.block)
 
-            # proposal_msg = proposal_map[r]
-            # output(proposal_msg.block)
-            # output("&&& ", proposal_msg.block.qc)
-            # if proposal_msg.block.qc:
-            #     output(proposal_msg.block.qc)
-            #     output(Cryptography.valid_signatures(
-            #         proposal_msg.block.qc))
+                    # vote_msg = self.safety.make_vote(
+                    #     proposal_message.block, proposal_message.last_round_tc)
+                    # output("After sync up using QC")
 
-    def receive(msg=("Kindly sync up", to_round), from_=np):
+                elif reqd_msg[0] == "T":
+                    # pass
+                    reqd_timeout_msg = reqd_msg[1]
+                    reqd_tc = reqd_msg[2]
+                    process_certificate_qc(reqd_timeout_msg.tmo_info.high_qc)
+                    process_certificate_qc(reqd_timeout_msg.high_commit_qc)
+
+                    self.pacemaker.advance_round_tc(
+                        reqd_timeout_msg.last_round_tc)
+                    self.pacemaker.advance_round_tc(reqd_tc)
+                    output("After sync up using TC")
+                # output("After sync up", self.pacemaker.current_round)
+
+    def receive(msg=("kindly sync up", to_round), from_=np):
         # output("I have to sync up from ",
+        # output("was asked to sync up to ", to_round,
+        #    'currently on ', self.pacemaker.current_round)
+        # output()
         #        self.pacemaker.current_round, "to ", to_round)
         if self.pacemaker.current_round <= to_round:
             # break
-            output("I was asked to sync up to ", to_round)
+            # output("I was asked to sync up to ", to_round)
             requestSyncUp(self.pacemaker.current_round, to_round)
             await(self.pacemaker.current_round > to_round)
+
+    # def receive(msg=())
 
 
 class ValidatorFI (process, Validator):

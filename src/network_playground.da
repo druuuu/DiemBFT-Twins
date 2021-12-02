@@ -5,34 +5,39 @@ from logger_util import LOGGER
 
 
 class NetworkPlayground(process):
-    def setup(scenario_executor_pid, number_of_nodes: int, number_of_twins: int, scenario, node_number_to_pid_mapping, pid_to_node_number_mapping, node_to_twin, twin_to_node):
+    def setup(scenario_executor_pid, number_of_nodes: int, number_of_twins: int, scenario, node_number_to_pid_mapping, pid_to_node_number_mapping, node_to_twin, twin_to_node, config_id, scenario_id):
         # self.rounds = len(getObjectFromPath(scenario, 'partitions'))
         # output("########", LOGGER.networkPlayground)
-        # LOGGER.np = self
+        LOGGER.np = self
+        LOGGER.scenario_executor = scenario_executor_pid
         # output("########", LOGGER.networkPlayground)
+
+        LOGGER.process_id = "network_playground"
+        LOGGER.filename = '../logs/config' + str(config_id) + '/' \
+            + '/scenario'+str(scenario_id)+'/' \
+            + LOGGER.process_id + ".log"
+
         self.scenario = scenario
         self.rounds = len(scenario['leaders'])-3
         self.commit_config = dict()
         self.node_number_to_pid_mapping = node_number_to_pid_mapping
         self.done_flag = False
+        self.livenessFlag = False
         self.pid_to_node_number_mapping = pid_to_node_number_mapping
         self.scenario_executor_pid = scenario_executor_pid
-        self.node_to_timeout_drop_rounds = dict()  # Maintains record of rounds for which timeout msgs dropped for a particular node
-
+        # Maintains record of rounds for which timeout msgs dropped for a particular node
+        self.node_to_timeout_drop_rounds = dict()
 
     ##################   Helper functions   ##################
 
-    
     ''' returns True if node_number present in twin_to_node else return False '''
     def is_twin(node_number):
         return node_number in self.twin_to_node
 
-    
     ''' returns the twin of node if it exists else None '''
     def get_twin(node_num):
         return self.node_to_twin.get(node_num)
 
-    
     ''' returns the round number of message based on message type (proposal | vote | timeout) '''
     def get_msg_round(msg, msg_type):
         if msg_type == MsgType.Proposal:
@@ -42,16 +47,13 @@ class NetworkPlayground(process):
         elif msg_type == MsgType.Timeout:
             return msg.tmo_info.round
 
-
     ''' returns partitions for a particular round '''
     def get_partitions_in_round(msg_round):
         return self.scenario["partitions"][msg_round-1]
-    
 
     ''' returns list of msg types to be dropped within partitions in a round '''
     def get_msg_types_to_drop_in_round(msg_round):
         return self.scenario["message_types"][msg_round-1]
-
 
     ''' tells whether msg_type is eligible for intra partition dropping '''
     def to_drop(msg_sender_number, msg_round, idx, msg_type):
@@ -60,15 +62,16 @@ class NetworkPlayground(process):
         if msg_type == MsgType.Proposal:
             if "Proposal" in msg_types_to_drop:
                 return True
-        
+
         elif msg_type == MsgType.Timeout:
             if "Timeout" in msg_types_to_drop:
 
                 if msg_sender_number not in self.node_to_timeout_drop_rounds:
                     # Means it has never dropped timeout msgs in this round
-                    self.node_to_timeout_drop_rounds[msg_sender_number] = [msg_round]
-                    # Update map and return False - to not drop this timeout msg
-                    return False
+                    self.node_to_timeout_drop_rounds[msg_sender_number] = [
+                        msg_round]
+                    # Update map and return False - to drop this timeout msg
+                    return True
 
                 if msg_round in self.node_to_timeout_drop_rounds[msg_sender_number]:
                     # Means it has dropped a timeout msg in this round before
@@ -76,7 +79,8 @@ class NetworkPlayground(process):
                     return False
 
                 # Update map to remember that it dropped a timeout msg for this round
-                self.node_to_timeout_drop_rounds[msg_sender_number].append(msg_round)
+                self.node_to_timeout_drop_rounds[msg_sender_number].append(
+                    msg_round)
                 return True
 
         elif msg_type == MsgType.Vote:
@@ -85,12 +89,10 @@ class NetworkPlayground(process):
 
         return False
 
-
     ''' get current partition at a particular index in partitions array '''
     def get_partition_at_idx(idx, msg_round, node):
         return self.scenario["partitions"][msg_round-1][idx]
 
-    
     ''' return index of partition for given round in which node is present '''
     def get_current_partition_index(msg_round, node):
         partitions_in_round = get_partitions_in_round(msg_round)
@@ -99,7 +101,6 @@ class NetworkPlayground(process):
                 return i
         return -1
 
-    
     ''' If the node p is a twin, then message should appear as though it was sent by the actual node, and not the twin '''
     def replace_with_twin_if_needed(node):
         actual_sender = node
@@ -107,7 +108,6 @@ class NetworkPlayground(process):
             actual_sender = self.twin_to_node[node]
         return actual_sender
 
-    
     ''' sends the msg to the appropriate nodes, attaching sender node in message '''
     def send_to_nodes(msg_name, destination_nodes, msg, sender):
         node_pids = []
@@ -118,8 +118,6 @@ class NetworkPlayground(process):
 
     ##########################################################
 
-
-
     ##################   Receive Handlers   ##################
 
     def receive(msg=('Proposal', proposal_msg), from_=msg_sender):
@@ -129,7 +127,10 @@ class NetworkPlayground(process):
         ''' if msg_round exceeds even the over estimated round, ignore '''
         if msg_round >= self.rounds + 3:
             output("Proposal Sending quit process")
-            send(('Quit Process'), to=self.scenario_executor_pid)
+            LOGGER.log_event('Sent', 'Quit Process', {},
+                             self.scenario_executor_pid)
+            send(('Stop Processes',), to=self.scenario_executor_pid)
+
             return
 
         destination_nodes = set()
@@ -145,42 +146,45 @@ class NetworkPlayground(process):
                     destination_nodes.add(node_number)
 
         else:
-            # get index of partition in which msg_sender lies 
-            msg_partition_idx = self.get_current_partition_index(msg_round, msg_sender_number)
+            # get index of partition in which msg_sender lies
+            msg_partition_idx = self.get_current_partition_index(
+                msg_round, msg_sender_number)
 
             # check if msg is eligible for intra partition dropping
             if to_drop(msg_sender_number, msg_round, msg_partition_idx, MsgType.Proposal):
                 # drop this message, ignore
-                output("Dropping proposal from ", msg_sender_number, " to ", destination_nodes, "in round ", msg_round)
+                output("Dropping proposal from ", msg_sender_number,
+                       " to ", destination_nodes, "in round ", msg_round)
                 return
 
             ''' When msg_round <= rounds, create partitions according to the scenario '''
-            partition = self.get_partition_at_idx(msg_partition_idx, msg_round, msg_sender)
-            
+            partition = self.get_partition_at_idx(
+                msg_partition_idx, msg_round, msg_sender)
+
             for node_number in partition:
                 destination_nodes.add(node_number)
-            
+
         # sender node will be updated if it is a twin
         actual_sender_node = self.replace_with_twin_if_needed(
             msg_sender_number)
 
         if len(destination_nodes) > 0:
             output("Sending proposal from ", msg_sender_number,
-                " to ", destination_nodes, "in round ", msg_round)
+                   " to ", destination_nodes, "in round ", msg_round)
+            LOGGER.log_np_event('Sent', 'Proposal', actual_sender_node,
+                                destination_nodes, msg_round, proposal_msg)
             self.send_to_nodes('Proposal', destination_nodes,
-                            proposal_msg, actual_sender_node)
-
-
+                               proposal_msg, actual_sender_node)
 
     def receive(msg=('Vote', vote_msg, destination_node_num), from_=msg_sender):
-        
+
         msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
         msg_round = self.get_msg_round(vote_msg, MsgType.Vote)
 
         ''' if msg_round exceeds even the over estimated round, ignore '''
         if msg_round >= self.rounds + 3:
             output("Vote Sending quit process")
-            send(('Quit Process'), to=self.scenario_executor_pid)
+            send(('Stop Processes',), to=self.scenario_executor_pid)
             return
 
         destination_nodes = set()
@@ -198,17 +202,19 @@ class NetworkPlayground(process):
         else:
 
             # get index of partition in which msg_sender lies
-            msg_partition_idx = self.get_current_partition_index(msg_round, msg_sender_number)
+            msg_partition_idx = self.get_current_partition_index(
+                msg_round, msg_sender_number)
 
             # check if msg is eligible for intra partition dropping
             if to_drop(msg_sender_number, msg_round, msg_partition_idx, MsgType.Vote):
                 output("Dropping vote from ", msg_sender_number,
-                    " to ", destination_nodes, "in round ", msg_round)
+                       " to ", destination_nodes, "in round ", msg_round)
                 return
 
             ''' When msg_round <= rounds, create partitions according to the scenario '''
-            partition = self.get_partition_at_idx(msg_partition_idx, msg_round, msg_sender)
-            
+            partition = self.get_partition_at_idx(
+                msg_partition_idx, msg_round, msg_sender)
+
             if destination_node_num in partition:
                 destination_nodes.add(destination_node_num)
 
@@ -221,21 +227,22 @@ class NetworkPlayground(process):
 
         if len(destination_nodes) > 0:
 
-            output("Sending vote from ", msg_sender_number,
-                " to ", destination_nodes, "in round ", msg_round)
+            LOGGER.log_np_event('Sent', 'Vote', msg_sender_number,
+                                destination_nodes, msg_round, vote_msg)
+            output('Sent', msg_sender_number,
+                   " to ", destination_nodes, "in round ", msg_round)
             self.send_to_nodes('Vote', destination_nodes,
-                            vote_msg, actual_sender_node)
-
-
+                               vote_msg, actual_sender_node)
 
     def receive(msg=('Timeout', timeout_msg), from_=msg_sender):
         msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
+
         msg_round = self.get_msg_round(timeout_msg, MsgType.Timeout)
-        
+
         ''' if msg_round exceeds even the over estimated round, ignore '''
         if msg_round >= self.rounds + 3:
             output("Timeout Sending quit process")
-            send(('Quit Process'), to=self.scenario_executor_pid)
+            send(('Stop Processes',), to=self.scenario_executor_pid)
             return
 
         destination_nodes = set()
@@ -243,25 +250,36 @@ class NetworkPlayground(process):
         if msg_round > self.rounds:
             # no notion of partitions in this round, i.e. all nodes present in the same partition
             partitions_in_round = self.get_partitions_in_round(msg_round)
-            
+
             # broadcast messages to all nodes in the system
             for partition in partitions_in_round:
                 for node_number in partition:
                     destination_nodes.add(node_number)
-            
+
         else:
             # get index of partition in which msg_sender lies ---  using get_current_partition_index
-            msg_partition_idx = self.get_current_partition_index(msg_round, msg_sender_number)
-
+            msg_partition_idx = self.get_current_partition_index(
+                msg_round, msg_sender_number)
             # check if msg is eligible for intra partition dropping
             if to_drop(msg_sender_number, msg_round, msg_partition_idx, MsgType.Timeout):
                 # drop this message, ignore
-                output("Dropping timeout from ", msg_sender_number, " to ", destination_nodes, "in round ", msg_round)
+                output("Dropping timeout from ", msg_sender_number,
+                       " to ", destination_nodes, "in round ", msg_round)
+                #
+                # actual_sender_node = self.replace_with_twin_if_needed(
+                #     msg_sender_number)
+                # destination = set()
+                # destination.add(msg_sender_number)
+                # self.send_to_nodes('Timeout', destination,
+                #                    timeout_msg, actual_sender_node)
+                # #
+
                 return
 
             ''' When msg_round <= rounds, create partitions according to the scenario '''
-            partition = self.get_partition_at_idx(msg_partition_idx, msg_round, msg_sender)
-            
+            partition = self.get_partition_at_idx(
+                msg_partition_idx, msg_round, msg_sender)
+
             for node_number in partition:
                 destination_nodes.add(node_number)
 
@@ -270,17 +288,18 @@ class NetworkPlayground(process):
             msg_sender_number)
 
         if len(destination_nodes) > 0:
-            output("Sending timeout from ", msg_sender_number,
-                " to ", destination_nodes, "in round ", msg_round)
+            # output("Sending timeout from ", msg_sender_number,
+            #        " to ", destination_nodes, "in round ", msg_round)
+            LOGGER.log_np_event('Sent', 'Timeout', actual_sender_node,
+                                destination_nodes, msg_round, timeout_msg)
             self.send_to_nodes('Timeout', destination_nodes,
-                            timeout_msg, actual_sender_node)
+                               timeout_msg, actual_sender_node)
 
-
-
-    def receive(msg=('Stop Network Playground'), from_=se):
-        output("Stopping")
-        exit()
-        output("Stopped")
+    # def receive(msg=('Stop Network Playground'), from_=se):
+    #     self.done_flag = True
+    #     output("Stopping")
+    #     exit()
+    #     output("Stopped")
 
     def receive(msg=('Sync up required', past_round, current_round), from_=msg_sender):
         destination_nodes = list(self.pid_to_node_number_mapping.keys())
@@ -288,6 +307,8 @@ class NetworkPlayground(process):
         # msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
         # actual_sender = self.replace_with_twin_if_needed(
         #     msg_sender_number)
+        LOGGER.log_np_event('Sent', 'Sync up needed', msg_sender,
+                            destination_nodes, current_round, None, past_round)
         send(('Sync up needed', past_round, current_round, msg_sender
               ), to=destination_nodes)
 
@@ -298,9 +319,9 @@ class NetworkPlayground(process):
 
         ##########################################################
 
-    def receive(msg=("Sync up proposals", proposal_map, requester),
+    def receive(msg=("Sync up proposals", proposals_map, sync_map, requester),
                 from_=msg_sender):
-        send(("Sync up proposals", proposal_map, msg_sender),
+        send(("Sync up proposals", proposals_map, sync_map, msg_sender),
              to=requester)
 
     def receive(msg=("Done sync up"), from_=p):
@@ -308,26 +329,52 @@ class NetworkPlayground(process):
         destination_nodes.remove(p)
         send(("Done sync up", p), to=destination_nodes)
 
-    def receive(msg=("Kindly sync up", to_round, behind_node), from_=msg_sender):
+    def receive(msg=("kindly sync up", to_round, behind_node), from_=msg_sender):
         destination = []
         destination.append(self.node_number_to_pid_mapping[behind_node])
         if behind_node in self.node_to_twin:
             destination.append(
                 self.node_number_to_pid_mapping[self.node_to_twin[behind_node]])
         # output("sending sync up request to ", destination)
-        send(("Kindly sync up", to_round), to=destination)
+        send(("kindly sync up", to_round), to=destination)
+
+    ''' Receive handler to inform network playground that liveness is upheld'''
+    def receive(msg=('TC or QC generated'), from_=v):
+        self.livenessFlag = True
+
+    def receive(msg=('Commit config', commit_config), from_=v):
+        self.commit_config[v] = commit_config
+        output("Received ", commit_config, " from ", v)
+        if len(self.commit_config) == len(self.pid_to_node_number_mapping):
+            # output("Final ", self.commit_config)
+
+            send(("forward commit config", self.commit_config), to=parent())
+            exit()
 
     def run():
-        output("Network playground running")
         # start timer here? or in setup itself?
         while not self.done_flag:
-            # receive what messages exactly?
 
-            if await(received(('Done',), from_=self.scenario_executor_pid)):
+            if await(received(('Stop Network Playground',), from_=self.scenario_executor_pid)):
                 self.done_flag = True
+            elif await(self.livenessFlag):
+                self.livenessFlag = False
+            elif await(received(('Commit config', commit_config,))):
+                output("received something")
+            elif timeout(10):
+                send(('Stop Processes',), to=self.scenario_executor_pid)
+                output("liveness violated")
+                # output("Final ", self.commit_config)
+                # exit()
+                # break
+            # elif await(each(v in list(self.pid_to_node_number_mapping.keys()), has=received(('Commit config', commit_config,), from_=v))):
+                # output("Received commit config from", v)
 
-            # if await(receive(msg, destinations)):
-            #     pass
-            # elif timeout(6):
-            #     output("Liveness violated")
-            #     done_flag = True
+            # await(some(received(('Pong',), clk=rclk), has=(rclk > clk)))
+
+        exit()
+        # if await(receive(msg, destinations)):
+        #     pass
+        # elif timeout(6):
+        #     output("Liveness violated")
+        #     done_flag = True

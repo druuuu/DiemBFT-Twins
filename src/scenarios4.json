@@ -1,0 +1,31 @@
+[
+  {
+    "number_of_nodes": 4,
+    "number_of_twins": 1,
+    "partitions": [
+      [[0], [1], [2, 3, 4]],
+      [[0], [1], [2, 3, 4]],
+      [[0], [1, 2, 4], [3]],
+      [[0], [1, 2, 4], [3]],
+      [[0], [1, 2, 4], [3]],
+      [[0], [1], [2, 3, 4]],
+      [[0], [1, 2, 4], [3]],
+      [[0], [1], [2, 3, 4]],
+      [[0], [1, 2, 4], [3]],
+      [[0], [1, 2, 4], [3]]
+    ],
+    "leaders": [0, 1, 2, 2, 2, 0, 2, 0, 2, 2],
+    "message_types": [
+      [["Timeout"], ["Proposal"], ["Voting"]],
+      [["Timeout"], ["Proposal"], ["Voting"]],
+      [["Voting"], ["Timeout"], ["Proposal"]],
+      [["Voting"], ["Timeout"], ["Proposal"]],
+      [["Voting"], ["Timeout"], ["Proposal"]],
+      [["Timeout"], ["Proposal"], ["Voting"]],
+      [["Voting"], ["Timeout"], ["Proposal"]],
+      [["Timeout"], ["Proposal"], ["Voting"]],
+      [["Voting"], ["Timeout"], ["Proposal"]],
+      [["Voting"], ["Timeout"], ["Proposal"]]
+    ]
+  }
+]
