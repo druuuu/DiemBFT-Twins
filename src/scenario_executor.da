@@ -177,22 +177,26 @@ def main():
         shutil.rmtree('../ledgers/')
 
     # TODO: Generate scenarios
-    sg = ScenarioGenerator()
-    sg.generate_scenario(
-                    number_of_nodes = config_tests["number_of_nodes"],
-                    number_of_twins = config_tests["number_of_twins"],
-                    rounds = config_tests["rounds"],
-                    number_of_partition = config_tests["number_of_partition"],
-                    leaders_only_faulty = config_tests["leaders_only_faulty"],
-                    number_of_partitions_pruned = config_tests["number_of_partitions_pruned"],
-                    selection_type_for_partitions = config_tests["selection_type_for_partitions"],
-                    number_of_partitions_leaders_pruned = config_tests["number_of_partitions_leaders_pruned"],
-                    selection_type_for_partitions_leaders_pruned = config_tests["selection_type_for_partitions_leaders_pruned"],
-                    max_message_drops = config_tests["max_message_drops"],
-                    number_of_configs_pruned = config_tests["number_of_configs_pruned"],
-                    selection_type_for_configs_pruned = config_tests["selection_type_for_configs_pruned"],
-                    with_replacement = config_tests["with_replacement"],
-                    )
+    # sg = ScenarioGenerator()
+    # config_number = 1
+    # pprint(config_tests[config_number])
+    # sg.generate_scenario(
+    #                 config_number = config_number,
+    #                 number_of_nodes = config_tests[config_number]["number_of_nodes"],
+    #                 number_of_twins = config_tests[config_number]["number_of_twins"],
+    #                 rounds = config_tests[config_number]["rounds"],
+    #                 number_of_partition = config_tests[config_number]["number_of_partition"],
+    #                 leaders_only_faulty = config_tests[config_number]["leaders_only_faulty"],
+    #                 number_of_partitions_pruned = config_tests[config_number]["number_of_partitions_pruned"],
+    #                 selection_type_for_partitions = config_tests[config_number]["selection_type_for_partitions"],
+    #                 number_of_partitions_leaders_pruned = config_tests[config_number]["number_of_partitions_leaders_pruned"],
+    #                 selection_type_for_partitions_leaders_pruned = config_tests[config_number]["selection_type_for_partitions_leaders_pruned"],
+    #                 max_message_drops = config_tests[config_number]["max_message_drops"],
+    #                 number_of_configs_pruned = config_tests[config_number]["number_of_configs_pruned"],
+    #                 selection_type_for_configs_pruned = config_tests[config_number]["selection_type_for_configs_pruned"],
+    #                 step3_paper_execution  = config_tests[config_number]["step3_paper_execution"],
+    #                 with_replacement = config_tests[config_number]["with_replacement"],
+    #                 )
     config_id = 0
     for config in configs:
         # print(config)
