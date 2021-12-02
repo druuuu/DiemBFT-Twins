@@ -18,7 +18,7 @@ CPython
 Python Versions used to test:
 Python 3.6.13
 Python 3.7.0
-Python 3.7.9
+Python 3.7.12
 
 
 DistAlgo Version used for implementation:
@@ -31,7 +31,7 @@ Laptop
 
 WORKLOAD GENERATION:
 
-
+TODO: Change this
 We have specified the configuration that is required in a config file and placed it in a folder and named it as config. This folder consists of many such config files which are configured differently which would simulate the real case scenarios. These files are read by the main process which spawns the specified number of validators, clients, and also takes in the parameters which are required to simulate a real case scenario. These validators and clients run their own processes and communicate with each other which would essentially lead to a consensus of ordering the transactions and finalizing those.
 
 
@@ -53,43 +53,59 @@ MAIN FILES:
 -- Client: <path_of_project_folder>/src/client.da
 -- Validator(Replica): <path_of_project_folder>/src/validator.da
 
+-- Main Code for Test Generator: <path_of_project_folder>/src/ScenarioGenerator.py
+-- Main Code for Test Executor: <path_of_project_folder>/src/scenario_executor.da
+
 
 CODE SIZE:
-1.  Non-blank Non-comment lines of code in complete codebase: 1568	(Total)
+1.  Non-blank Non-comment lines of code in complete codebase: 1833	(Total)
                                        	277	(Other - client, config, run_diembft)
-                                       	975	(Algorithm)
+                                       	1556 (Algorithm - DiemBFT + Twins)
 
-    Files added for Twins implementation: network_playground.da scenario_executor.da ScenarioGenerator.py
-    Non-blank Non-comment lines of code in Twins implementation files: 396
+    github.com/AlDanial/cloc v 1.82  T=46.09 s (0.5 files/s, 73.7 lines/s)
+    -------------------------------------------------------------------------------
+    Language                     files          blank        comment           code
+    -------------------------------------------------------------------------------
+    Python                          18            477           1080           1699
+    JSON                             3              5              0            134
+    -------------------------------------------------------------------------------
+    SUM:                            21            482           1080           1833
+    -------------------------------------------------------------------------------
+
+
+    Files added for Twins implementation:
+        scenario_executor.da
+        ScenarioGenerator.py
+        network_playground.da
+        config_test_generator.py
+
+    Non-blank Non-comment lines of code in Twins implementation files: 510
+
+    github.com/AlDanial/cloc v 1.82  T=100.23 s (0.0 files/s, 9.4 lines/s)
+    -------------------------------------------------------------------------------
+    Language                     files          blank        comment           code
+    -------------------------------------------------------------------------------
+    Python                           4            164            264            510
+    -------------------------------------------------------------------------------
+    SUM:                             4            164            264            510
+    -------------------------------------------------------------------------------
 
 
 2. Count was obtained using commands:
     cloc command - cloc --force-lang="Python",da .
-    cloc command - cloc --force-lang="Python",da network_playground.da scenario_executor.da ScenarioGenerator.py
-    
+    cloc command - cloc --force-lang="Python",da network_playground.da scenario_executor.da ScenarioGenerator.py config_test_generator.py
 
-3. About 80% of 975 are for the algorithm itself.
+
+3. About 80% of 510 are for the algorithm itself.
 
 
 LANGUAGE FEATURE USAGE:
 Our algorithm uses approximately 21 dictionary comprehensions, 11 set comprehensions, 6 list comprehensions, 3 await statements and about 5 receive handlers.
 
+Our Twins implementation uses approximately
+4 await statements and about
+8 receive handlers.
+
 
 CONTRIBUTIONS:
-(All mentioned members contributed equally towards implementing the DiemBFT Algorithm in DistAlgo. All members contributed towards designing/developing/fixing/documenting most of the modules/tasks. The following contribution list shows some of the major contributions to specific modules/tasks by the contributors)
 
-
-Vivek Neppalli: 
--- Designed Ledger Tree
--- Designed pruning method for Block Tree
-
-
-Manish Adkar:
--- Developed Main(run_diembft.da) module 
--- Developed Clients and Validators and message passing between each other and the Main module
--- Fault Injection
-
-
-Shubham Sahu:
--- Developed Timeout mechanism and Pacemaker module
--- Developed and integrated Cryptography during message passing and in Safety module
