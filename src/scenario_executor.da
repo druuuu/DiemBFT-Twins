@@ -100,19 +100,28 @@ class ScenarioExecutor(process):
         start(networkPlayground | twins | validators)
         LOGGER.log_action(
             'STARTED validators, twins and network playground', None)
+
         await(received(('Stop Processes',)))
 
         output("RECEIVED QUIT REQUEST")
         LOGGER.log_event('RECEIVED', 'QUIT REQUEST', {}, networkPlayground)
 
         send(('Stop Running',), to=validators | twins)
+        LOGGER.log_np_event('Sent', 'Stop Running', self, validators | twins)
 
         await(self.doneFlag)
 
     def receive(msg=("forward commit config", commit_config), from_=np):
+        LOGGER.log_event('RECEIVED', 'forward commit config',
+                         commit_config, np)
         send(('Ask main to end',), to=parent())
+        LOGGER.log_event('SENT', 'Ask main to end', None, parent())
         output("Final ", commit_config)
-
+        if safety_test(commit_config):
+            output("Safety Upheld")
+        else:
+            output("Safety Violated")
+        LOGGER.log_action("Final ", commit_config)
         # output(commit_config)
         exit()
         # send(("done",), to=validators)
@@ -124,25 +133,33 @@ class ScenarioExecutor(process):
         number_of_ledgers = len(commit_config)
         max_rounds = -1
         for ledger in commit_config:
-            max_rounds = max(max_rounds, len(ledger))
+            # print([ledger])
+            max_rounds = max(max_rounds, len(commit_config[ledger]))
+        # for c in commit_config:
+
         for r in range(max_rounds):
             curr = None
-            for l in commit_config:
-                if curr and r < len(l):
-                    if curr != l[r]:
+            for ledger in commit_config:
+                if curr and r < len(commit_config[ledger]):
+                    if curr != str(commit_config[ledger][r]):
+                        output(curr, commit_config[ledger][r])
                         return False
-                if not curr and r < len(l):
-                    curr = l[r]
+                if not curr and r < len(commit_config[ledger]):
+                    curr = str(commit_config[ledger][r])
 
         return True
 
 
 def is_config_valid(config):
     if int(config['nvalidators']) < (3 * int(config['nfaulty']) + 1):
+        LOGGER.log_action(
+            "Invalid config, Number of validators should be more than thrice of number of faulty validators.", config)
         print(
             "Number of validators should be more than thrice of number of faulty validators.")
         return False
     if (int(config['nfaulty']) > int(config['exclude_size'])) or (int(config['exclude_size']) > 2 * int(config['nfaulty'])):
+        LOGGER.log_action(
+            "Exlude size should be between nfaulty and 2*nfaulty", config)
         print(
             "Exlude size should be between nfaulty and 2*nfaulty")
         return False
@@ -188,6 +205,7 @@ def main():
             output("The provided config", config,
                    "is not valid. Skipping this config.")
             continue
+
         scenario_file = open(SCENARIOS_FILE)
         scenario_id = 0
         json_content = json.load(scenario_file)
@@ -199,6 +217,7 @@ def main():
             scenario_executor = new(ScenarioExecutor, num=1)
             setup(scenario_executor, (config, config_id, each_scenario, scenario_id))
             start(scenario_executor)
+
             # await(some(received(("Next scenario",), from_=scenario_executor)))
             await(received(('Ask main to end',)))
             output("88888888888888888")
