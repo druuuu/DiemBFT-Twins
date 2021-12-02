@@ -60,9 +60,9 @@ class Validator (process):
         Cryptography.public_keys_validators = self.public_keys_validators
 
         self.proposals_map = {}
-        self.proposal_per_round = {}
-        self.qc_map = {}
-        self.tc_map = {}
+        self.sync_up_map = {}
+        # self.qc_map = {}
+        # self.tc_map = {}
         # self.sync_up_map = {}
 
         self.doneFlag = False
@@ -115,11 +115,10 @@ class Validator (process):
         # output("await done")
         # await(received(('done',), from_=parent()))
         while True:
-            output("Inside loop")
-        #     # if await(received(('done',), from_=se)):
-        #     #     self.done_flag = True
-        #     if await(received(('done',), from_=self.networkPlayground)):
-        #         break
+            #     # if await(received(('done',), from_=se)):
+            #     #     self.done_flag = True
+            #     if await(received(('done',), from_=self.networkPlayground)):
+            #         break
             if await(received(('done',))):
                 output("reached here")
                 break
@@ -205,9 +204,9 @@ class Validator (process):
                 high_commit_qc=self.blocktree.high_commit_qc,
                 validator=validator_id
             )
-            if self.pacemaker.current_round-1 not in self.proposal_per_round:
-                self.proposal_per_round[self.pacemaker.current_round -
-                                        1] = ["P", proposal_msg]
+            # if self.pacemaker.current_round-1 not in self.proposal_per_round:
+            #     self.proposal_per_round[self.pacemaker.current_round -
+            #                             1] = ["P", proposal_msg]
             # self.proposal_per_round[proposal_msg.block.round] = [
             #     "P", proposal_msg]
             # output("Proposing in round", pacemaker.current_round)
@@ -219,6 +218,7 @@ class Validator (process):
 
     '''Procedure process proposal msg(P)'''
     def receive(msg=('Proposal', proposal_msg, proposer), from_=p):
+        # output("########## ", self.sync_up_map)
         LOGGER.log_event("Received", "Proposal", proposal_msg, p)
         signature_verified = Cryptography.get_verified_message(
             proposal_msg.signature, public_keys_validators[proposer])
@@ -244,9 +244,6 @@ class Validator (process):
                 # await(not self.syncUpFlag)
                 await(self.pacemaker.current_round > proposal_msg.block.qc.vote_info.round)
                 send(("Done sync up"), to=self.networkPlayground)
-
-            # create a proposal[round_number] = proposal_message entry
-            self.proposals_map[proposal_msg.block.round] = proposal_msg
 
             self.should_start_new_round = False
             # output("This message was proposed by ", proposal_msg.block.qc)
@@ -278,9 +275,11 @@ class Validator (process):
             #         LOGGER.log(
             #             "Not processing the Proposal message as transactions are not valid", None)
             #         return
-            if proposal_msg.block.round-1 not in self.proposal_per_round:
-                self.proposal_per_round[proposal_msg.block.round-1] = [
-                    "P", proposal_msg]
+
+            # create a proposal[round_number] = proposal_message entry
+            self.proposals_map[proposal_msg.block.round] = proposal_msg
+            if proposal_msg.block.round-1 not in self.sync_up_map:
+                self.sync_up_map[proposal_msg.block.round-1] = ["P"]
 
             if len(proposal_msg.block.payload) == 0:
                 self.should_start_new_round = True
@@ -379,7 +378,7 @@ class Validator (process):
             tc = self.pacemaker.process_remote_timeout(timeout_msg)
             '''if tc != ⊥ then'''
             if tc is not None:
-                self.proposal_per_round[timeout_msg.tmo_info.round] = [
+                self.sync_up_map[timeout_msg.tmo_info.round] = [
                     "T", timeout_msg, tc]
                 send(('TC or QC generated'), to=self.networkPlayground)
 
@@ -420,88 +419,62 @@ class Validator (process):
             # output("I WILL HELP")
             # output("I am on round = ", self.pacemaker.current_round,
             #        " requested = ", past_round)
-            proposal_map = {}
+            sc_map = {}
             # output("I need to send map of proposals from ",
             #        past_round+1, "to ", current_round + 1)
+            # output("***** ", self.sync_up_map, past_round -
+            #        1, current_round, self.proposals_map)
             for r in range(past_round-1, current_round+1):
-                if r in self.proposal_per_round:
-                    proposal_map[r] = self.proposal_per_round[r]
-            send(("Sync up proposals", proposal_map, requester),
+
+                if r in self.sync_up_map:
+                    sc_map[r] = self.sync_up_map[r]
+            send(("Sync up proposals", self.proposals_map, sc_map, requester),
                  to=self.networkPlayground)
             await(received(("Done sync up", requester), from_=self.networkPlayground))
             # send(('Vote', vote_msg, next_leader),
             #      to=self.networkPlayground)
 
-    def receive(msg=("Sync up proposals", proposal_map, p), from_=np):
-
-        # output("RECEIVED PROPOSALS map from ", p, proposal_map)
+    def receive(msg=("Sync up proposals", proposals_map, sc_map, p), from_=np):
+        # output("RECEIVED PROPOSALS map from ", p, proposals_map, sc_map)
         # output(proposal_map)
         # output(self.node_number, "received ", proposal_map)
         output("i am syncing up now")
-        for r in proposal_map.keys():
 
-            # if self.pacemaker.current_round == r-1:
-            #     output("Before sync up", self.pacemaker.current_round)
-            #     proposal_message = proposal_map[r]
-            #     if proposal_message.last_round_tc != None:
-            #         if proposal_message.block.qc is not None:
-
-            #             process_certificate_qc(proposal_message.block.qc)
-            #         if proposal_message.high_commit_qc is not None:
-            #             process_certificate_qc(proposal_message.high_commit_qc)
-
-            #         self.pacemaker.advance_round_tc(
-            #             proposal_message.last_round_tc)
-
-            #         self.blocktree.execute_and_insert(proposal_message.block)
-
-            #         vote_msg = self.safety.make_vote(
-            #             proposal_message.block, proposal_message.last_round_tc)
-
-            #         # self.pacemaker.advance_round_tc(
-            #         #     proposal_message.last_round_tc)
-            #         output("After sync up using TC")
-            # elif proposal_message.block is not None and proposal_message.block.qc is not None:
-            #     # process_certificate_qc(proposal_message.block.qc)
-
-            #     if proposal_message.block.qc is not None:
-            #         process_certificate_qc(proposal_message.block.qc)
-            #     if proposal_message.high_commit_qc is not None:
-            #         process_certificate_qc(proposal_message.high_commit_qc)
-
-            #     self.pacemaker.advance_round_tc(
-            #         proposal_message.last_round_tc)
-
-            #     self.blocktree.execute_and_insert(proposal_message.block)
-
-            #     vote_msg = self.safety.make_vote(
-            #         proposal_message.block, proposal_message.last_round_tc)
-
-            #     output("After sync up using QC")
-
-            # output("After sync up", self.pacemaker.current_round)
+        for r in sc_map.keys():
 
             if self.pacemaker.current_round == r:
-                reqd_msg = proposal_map[r]
+                reqd_msg = sc_map[r]
                 if reqd_msg[0] == "P":
+                    if r not in proposals_map and r+1 not in proposals_map:
+                        return
                     # reqd_proposal_message = proposal_map[r-1][1]
-                    proposal_message = reqd_msg[1]
-                    if self.pacemaker.current_round == 4 or self.pacemaker.current_round == 5:
-                        output(self.pacemaker.current_round,
-                               proposal_message.block.payload)
-                    if proposal_message.block.qc is not None:
-                        process_certificate_qc(proposal_message.block.qc)
-                    if proposal_message.high_commit_qc is not None:
-                        process_certificate_qc(proposal_message.high_commit_qc)
+                    current_round_proposal = proposals_map[r]
+                    next_round_proposal = proposals_map[r+1]
 
-                    self.pacemaker.advance_round_tc(
-                        proposal_message.last_round_tc)
-
-                    self.blocktree.execute_and_insert(proposal_message.block)
+                    if r not in self.proposals_map:
+                        self.blocktree.execute_and_insert(
+                            current_round_proposal.block)
+                        self.proposals_map[self.pacemaker.current_round] = current_round_proposal
 
                     vote_msg = self.safety.make_vote(
-                        proposal_message.block, proposal_message.last_round_tc)
+                        current_round_proposal.block, current_round_proposal.last_round_tc)
+
+                    if next_round_proposal.block.qc is not None:
+                        process_certificate_qc(next_round_proposal.block.qc)
+                    if next_round_proposal.high_commit_qc is not None:
+                        process_certificate_qc(
+                            next_round_proposal.high_commit_qc)
+
+                    self.pacemaker.advance_round_tc(
+                        next_round_proposal.last_round_tc)
+
                     output("After sync up using QC")
+
+                    # self.blocktree.execute_and_insert(proposal_message.block)
+
+                    # vote_msg = self.safety.make_vote(
+                    #     proposal_message.block, proposal_message.last_round_tc)
+                    # output("After sync up using QC")
 
                 elif reqd_msg[0] == "T":
                     # pass

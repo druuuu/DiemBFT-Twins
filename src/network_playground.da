@@ -310,9 +310,9 @@ class NetworkPlayground(process):
 
         ##########################################################
 
-    def receive(msg=("Sync up proposals", proposal_map, requester),
+    def receive(msg=("Sync up proposals", proposals_map, sync_map, requester),
                 from_=msg_sender):
-        send(("Sync up proposals", proposal_map, msg_sender),
+        send(("Sync up proposals", proposals_map, sync_map, msg_sender),
              to=requester)
 
     def receive(msg=("Done sync up"), from_=p):

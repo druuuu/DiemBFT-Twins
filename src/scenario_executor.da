@@ -18,7 +18,7 @@ from pprint import pprint
 # sys.path.append(os.path.dirname(cwd)+'/config')
 # print(sys.path)
 
-SCENARIOS_FILE = "scenarios2.json"
+SCENARIOS_FILE = "scenarios.json"
 
 
 class ScenarioExecutor(process):
@@ -242,7 +242,7 @@ class ScenarioExecutor(process):
         await(received(('Stop Processes',)))
 
         output("RECEIVED QUIT REQUEST")
-        LOGGER.log_event('RECEIVED', 'QUIT REQUEST', {}, None)
+        LOGGER.log_event('RECEIVED', 'QUIT REQUEST', {}, networkPlayground)
 
         send(('Stop Running',), to=validators | twins)
 
