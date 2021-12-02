@@ -63,8 +63,8 @@ class NetworkPlayground(process):
                     # Means it has never dropped timeout msgs in this round
                     self.node_to_timeout_drop_rounds[msg_sender_number] = [
                         msg_round]
-                    # Update map and return False - to not drop this timeout msg
-                    return False
+                    # Update map and return False - to drop this timeout msg
+                    return True
 
                 if msg_round in self.node_to_timeout_drop_rounds[msg_sender_number]:
                     # Means it has dropped a timeout msg in this round before
