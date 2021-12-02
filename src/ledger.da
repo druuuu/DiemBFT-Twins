@@ -4,7 +4,7 @@ from logger_util import LOGGER
 
 class Ledger:
 
-    def __init__(self, config_id, scenario_id, validator_id, id_block, recently_committed_block_ids, request_cache, node_number):
+    def __init__(self, config_id, scenario_id, validator_id, id_block, recently_committed_block_ids, request_cache, node_number, commit_config):
         self.validator_id = validator_id
         self.config_id = config_id
         self.scenario_id = scenario_id
@@ -16,6 +16,7 @@ class Ledger:
         self.id_to_block = id_block
         self.request_cache = request_cache
         self.node_number = node_number
+        self.commit_config = commit_config
         self.filename = "validator_" + str(node_number) + ".ledger"
         fp = open('../ledgers/config' + str(self.config_id) +
                   '/scenario' + str(self.scenario_id) +
@@ -101,6 +102,7 @@ class Ledger:
         while(stack):
             block_id, payload = stack.pop()
             self.commited[block_id] = payload
+            self.commit_config.append(block_id)
             # print("This is the payload = ", payload)
             # for txn in payload:
             #     # if txn['req_id'] in self.request_cache:

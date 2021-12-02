@@ -120,7 +120,7 @@ class NetworkPlayground(process):
         ''' if msg_round exceeds even the over estimated round, ignore '''
         if msg_round >= self.rounds + 3:
             output("Proposal Sending quit process")
-            send(('Quit Process',), to=self.scenario_executor_pid)
+            send(('Stop Processes',), to=self.scenario_executor_pid)
             return
 
         destination_nodes = set()
@@ -172,7 +172,7 @@ class NetworkPlayground(process):
         ''' if msg_round exceeds even the over estimated round, ignore '''
         if msg_round >= self.rounds + 3:
             output("Vote Sending quit process")
-            send(('Quit Process',), to=self.scenario_executor_pid)
+            send(('Stop Processes',), to=self.scenario_executor_pid)
             return
 
         destination_nodes = set()
@@ -227,7 +227,7 @@ class NetworkPlayground(process):
         ''' if msg_round exceeds even the over estimated round, ignore '''
         if msg_round >= self.rounds + 3:
             output("Timeout Sending quit process")
-            send(('Quit Process',), to=self.scenario_executor_pid)
+            send(('Stop Processes',), to=self.scenario_executor_pid)
             return
 
         destination_nodes = set()
@@ -315,6 +315,11 @@ class NetworkPlayground(process):
     def receive(msg=('TC or QC generated'), from_=v):
         self.livenessFlag = True
 
+    # def receive(msg=('Commit config', commit_config), from_=v):
+        # output("Received ", commit_config, " from ", v)
+        # send(("forward commit config", commit_config), to=parent())
+        # exit()
+
     def run():
         # start timer here? or in setup itself?
         while not self.done_flag:
@@ -323,10 +328,16 @@ class NetworkPlayground(process):
                 self.done_flag = True
             elif await(self.livenessFlag):
                 self.livenessFlag = False
+            elif await(received(('Commit config', commit_config,))):
+                output("received something")
             elif timeout(10):
                 output("liveness violated")
                 exit()
                 break
+            # elif await(each(v in list(self.pid_to_node_number_mapping.keys()), has=received(('Commit config', commit_config,), from_=v))):
+                # output("Received commit config from", v)
+
+            # await(some(received(('Pong',), clk=rclk), has=(rclk > clk)))
 
         exit()
         # if await(receive(msg, destinations)):

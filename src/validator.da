@@ -40,9 +40,10 @@ class Validator (process):
         self.request_cache = dict()
         self.recently_committed_block_ids = list()
         self.should_start_new_round = True
+        self.commit_config = []
 
         self.ledger = Ledger(
-            config_id, scenario_id, validator_id, self.id_block, self.recently_committed_block_ids, self.request_cache, node_number)
+            config_id, scenario_id, validator_id, self.id_block, self.recently_committed_block_ids, self.request_cache, node_number, self.commit_config)
         self.blocktree = BlockTree(
             validator_id, replicas, self.ledger, config['nfaulty'], self.id_block)
         self.safety = Safety(validator_id, replicas,
@@ -58,8 +59,12 @@ class Validator (process):
         Cryptography.replicas = self.replicas
         Cryptography.public_keys_validators = self.public_keys_validators
 
+        self.proposals_map = {}
         self.proposal_per_round = {}
-        self.sync_up_map = {}
+        self.qc_map = {}
+        self.tc_map = {}
+        # self.sync_up_map = {}
+
         self.doneFlag = False
         self.scenario_executor_pid = scenario_executor_pid
 
@@ -85,9 +90,10 @@ class Validator (process):
         send(('Timeout', timeout_msg), to=self.networkPlayground)
         LOGGER.log_event('Sent', 'Timeout', timeout_msg, self.replicas)
 
-    def receive(msg=('Stop Running'), from_=se):
-        output(self.proposal_per_round)
-        # output("Here")
+    def receive(msg=('Stop Running',), from_=se):
+        # output(self.proposal_per_round)
+        output("Here")
+        send(('Commit config', self.commit_config,), to=self.networkPlayground)
         exit()
 
     # def receive(msg=('done', "Done"), from_=se):
@@ -103,10 +109,10 @@ class Validator (process):
         self.pacemaker.start_timer(1)
         LOGGER.log(replicas[validator_id])
         process_new_round_event(None)
-        output("Working here")
         # self.pacemaker.stop_timer(self.pacemaker.current_round)
         # await(received(('done',)))
-
+        # await(received(('done',)))
+        # output("await done")
         # await(received(('done',), from_=parent()))
         while True:
             output("Inside loop")
@@ -238,6 +244,10 @@ class Validator (process):
                 # await(not self.syncUpFlag)
                 await(self.pacemaker.current_round > proposal_msg.block.qc.vote_info.round)
                 send(("Done sync up"), to=self.networkPlayground)
+
+            # create a proposal[round_number] = proposal_message entry
+            self.proposals_map[proposal_msg.block.round] = proposal_msg
+
             self.should_start_new_round = False
             # output("This message was proposed by ", proposal_msg.block.qc)
             if proposal_msg.block.qc is not None and proposer != validator_id:

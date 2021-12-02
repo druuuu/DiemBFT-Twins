@@ -166,6 +166,7 @@ class ScenarioExecutor(process):
         self.scenario_id = scenario_id
         self.config = config
         self.config_id = config_id
+        self.doneFlag = False
         # print(self.config_id)
 
     def run():
@@ -228,14 +229,18 @@ class ScenarioExecutor(process):
         # output(twins)
         # Start all processes
         start(networkPlayground | twins | validators)
-        await(received(('Quit Process',)))
 
-        # await(some(received(("Quit Process"), from_=networkPlayground)))
+        await(received(('Stop Processes',)))
+
         output("RECEIVED QUIT REQUEST")
-        # send(("done",), to=validators)
-        # send(("done",), to=twins)
-        # send(('done',), to=(validators | twins))
-# send(('Quit Process'), to=self.scenario_executor_pid)
+
+        send(('Stop Running',), to=validators | twins)
+
+        await(self.doneFlag)
+
+    def receive(msg=("forward commit config", commit_config), from_=np):
+        send(('Ask main to end',), to=parent())
+        exit()
 
 
 def is_config_valid(config):
@@ -297,6 +302,9 @@ def main():
             scenario_executor = new(ScenarioExecutor, num=1)
             setup(scenario_executor, (config, config_id, each_scenario, scenario_id))
             start(scenario_executor)
-            await(some(received(("Next scenario",), from_=scenario_executor)))
+            # await(some(received(("Next scenario",), from_=scenario_executor)))
+            await(received(('Ask main to end',)))
+            output("88888888888888888")
             scenario_id += 1
         config_id += 1
+    exit()
