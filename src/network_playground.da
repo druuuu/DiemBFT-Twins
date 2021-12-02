@@ -130,6 +130,7 @@ class NetworkPlayground(process):
             LOGGER.log_event('Sent', 'Quit Process', {},
                              self.scenario_executor_pid)
             send(('Stop Processes',), to=self.scenario_executor_pid)
+
             return
 
         destination_nodes = set()
