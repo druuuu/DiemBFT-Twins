@@ -103,6 +103,7 @@ LANGUAGE FEATURE USAGE:
 Our algorithm uses approximately 21 dictionary comprehensions, 11 set comprehensions, 6 list comprehensions, 3 await statements and about 5 receive handlers.
 
 Our Twins implementation uses approximately
+7 list comprehensions
 4 await statements and about
 8 receive handlers.
 
