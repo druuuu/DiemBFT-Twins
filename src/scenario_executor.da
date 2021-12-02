@@ -18,7 +18,7 @@ from pprint import pprint
 # sys.path.append(os.path.dirname(cwd)+'/config')
 # print(sys.path)
 
-SCENARIOS_FILE = "scenarios8.json"
+SCENARIOS_FILE = "scenarios6.json"
 
 
 class ScenarioExecutor(process):
@@ -112,7 +112,10 @@ class ScenarioExecutor(process):
     def receive(msg=("forward commit config", commit_config), from_=np):
         send(('Ask main to end',), to=parent())
         output("Final ", commit_config)
-
+        if safety_test(commit_config):
+            output("Safety Upheld")
+        else:
+            output("Safety Violated")
         # output(commit_config)
         exit()
         # send(("done",), to=validators)
@@ -124,15 +127,19 @@ class ScenarioExecutor(process):
         number_of_ledgers = len(commit_config)
         max_rounds = -1
         for ledger in commit_config:
-            max_rounds = max(max_rounds, len(ledger))
+            # print([ledger])
+            max_rounds = max(max_rounds, len(commit_config[ledger]))
+        # for c in commit_config:
+
         for r in range(max_rounds):
             curr = None
-            for l in commit_config:
-                if curr and r < len(l):
-                    if curr != l[r]:
+            for ledger in commit_config:
+                if curr and r < len(commit_config[ledger]):
+                    if curr != str(commit_config[ledger][r]):
+                        output(curr, commit_config[ledger][r])
                         return False
-                if not curr and r < len(l):
-                    curr = l[r]
+                if not curr and r < len(commit_config[ledger]):
+                    curr = str(commit_config[ledger][r])
 
         return True
 

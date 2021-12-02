@@ -112,7 +112,6 @@ class Ledger:
             #     # else:
             #     LOGGER.log('Ledger: commit committing a txn', txn)
             #     # fp.write(txn['command']+'\n')
-            print(self.node_number, " COMMITTING ", payload)
             fp.write(payload+'\n')
             self.recently_committed_block_ids.append(block_id)
             LOGGER.log_action('Committed blocks to ledger',

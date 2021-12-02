@@ -111,6 +111,8 @@ class NetworkPlayground(process):
     ''' sends the msg to the appropriate nodes, attaching sender node in message '''
     def send_to_nodes(msg_name, destination_nodes, msg, sender):
         node_pids = []
+        # output("sending", msg_name, " to ", destination_nodes, "from ", sender)
+
         for node_num in destination_nodes:
             node_pids.append(self.node_number_to_pid_mapping.get(node_num))
         if node_pids:
@@ -229,14 +231,14 @@ class NetworkPlayground(process):
 
             LOGGER.log_np_event('Sent', 'Vote', msg_sender_number,
                                 destination_nodes, msg_round, vote_msg)
-            output('Sent', msg_sender_number,
-                   " to ", destination_nodes, "in round ", msg_round)
+
             self.send_to_nodes('Vote', destination_nodes,
                                vote_msg, actual_sender_node)
 
     def receive(msg=('Timeout', timeout_msg), from_=msg_sender):
-        msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
 
+        msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
+        # output("want to timeout by ", msg_sender_number)
         msg_round = self.get_msg_round(timeout_msg, MsgType.Timeout)
 
         ''' if msg_round exceeds even the over estimated round, ignore '''
@@ -279,7 +281,7 @@ class NetworkPlayground(process):
             ''' When msg_round <= rounds, create partitions according to the scenario '''
             partition = self.get_partition_at_idx(
                 msg_partition_idx, msg_round, msg_sender)
-
+            # output(msg_sender_number, partition, msg_round)
             for node_number in partition:
                 destination_nodes.add(node_number)
 
@@ -336,6 +338,7 @@ class NetworkPlayground(process):
             destination.append(
                 self.node_number_to_pid_mapping[self.node_to_twin[behind_node]])
         # output("sending sync up request to ", destination)
+        # output("NP asking ", behind_node, "to sync up to ", to_round)
         send(("kindly sync up", to_round), to=destination)
 
     ''' Receive handler to inform network playground that liveness is upheld'''
@@ -361,7 +364,7 @@ class NetworkPlayground(process):
                 self.livenessFlag = False
             elif await(received(('Commit config', commit_config,))):
                 output("received something")
-            elif timeout(10):
+            elif timeout(15):
                 send(('Stop Processes',), to=self.scenario_executor_pid)
                 output("liveness violated")
                 # output("Final ", self.commit_config)
