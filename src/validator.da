@@ -12,6 +12,8 @@ from mem_pool import MemPool
 from object_types import FailType, MsgType, ProposalMsg
 from pacemaker import Pacemaker
 from safety import Safety
+import os
+# from src.network_playground import NetworkPlayground
 
 
 class Validator (process):
@@ -21,13 +23,15 @@ class Validator (process):
         send(('Sync up required', past_round,
               current_round), to=self.networkPlayground)
 
-    def setup(config, config_id: int, validator_id: int, replicas: list,  private_key, public_keys_validators, leaders, networkPlayground, node_number):
+    def setup(config, config_id: int, scenario, scenario_id, validator_id: int, replicas: list,  private_key, public_keys_validators, leaders, networkPlayground, node_number, scenario_executor_pid):
         output("Validator with id ", validator_id)
+
         LOGGER.replicas = replicas
         # LOGGER.process_id = "validator_" + str(validator_id)
         LOGGER.process_id = "validator_" + str(node_number)
         # LOGGER.clients = clients
         LOGGER.filename = '../logs/config' + str(config_id) + '/' \
+            + '/scenario'+str(scenario_id)+'/' \
             + LOGGER.process_id + ".log"
 
         LOGGER.log_action("Initial configuration", config)
@@ -38,7 +42,7 @@ class Validator (process):
         self.should_start_new_round = True
 
         self.ledger = Ledger(
-            config_id, validator_id, self.id_block, self.recently_committed_block_ids, self.request_cache, node_number)
+            config_id, scenario_id, validator_id, self.id_block, self.recently_committed_block_ids, self.request_cache, node_number)
         self.blocktree = BlockTree(
             validator_id, replicas, self.ledger, config['nfaulty'], self.id_block)
         self.safety = Safety(validator_id, replicas,
@@ -56,6 +60,8 @@ class Validator (process):
 
         self.proposal_per_round = {}
         self.sync_up_map = {}
+        self.doneFlag = False
+        self.scenario_executor_pid = scenario_executor_pid
 
         if config['failure_config'].seed is None:
             config['failure_config'].seed = random.randint(10000, 100000)
@@ -84,14 +90,40 @@ class Validator (process):
         # output("Here")
         exit()
 
+    # def receive(msg=('done', "Done"), from_=se):
+    #     output("setting await flag")
+    #     self.doneFlag = True
+    #     output("I was asked to stop")
+
+    # def receive(msg=('TC or QC generated'), from_=v):
+    #     self.livenessFlag = True
+
     '''Procedure start event processing(M)'''
     def run():
         self.pacemaker.start_timer(1)
         LOGGER.log(replicas[validator_id])
         process_new_round_event(None)
-        await(received(('Done',), from_=parent()))
-        self.pacemaker.stop_timer(self.pacemaker.current_round)
-        output("Validator", self.validator_id, "is exiting")
+        output("Working here")
+        # self.pacemaker.stop_timer(self.pacemaker.current_round)
+        # await(received(('done',)))
+
+        # await(received(('done',), from_=parent()))
+        while True:
+            output("Inside loop")
+        #     # if await(received(('done',), from_=se)):
+        #     #     self.done_flag = True
+        #     if await(received(('done',), from_=self.networkPlayground)):
+        #         break
+            if await(received(('done',))):
+                output("reached here")
+                break
+        #         # self.livenessFlag = False
+            elif timeout(100):
+                output("process too long")
+                break
+        #         # output("liveness violated")
+        output('terminating')
+        exit()
 
     '''Procedure process certificate qc(qc)'''
     def process_certificate_qc(qc):
@@ -280,6 +312,7 @@ class Validator (process):
                 LOGGER.log_action("Generated a Quorum Certificate", qc)
                 '''process certificate qc(qc)
                 process new round event(⊥)'''
+                send(('TC or QC generated'), to=self.networkPlayground)
                 output("*****QC generated for round ", qc.vote_info.round)
                 process_certificate_qc(qc)
                 process_new_round_event(None)
@@ -331,8 +364,11 @@ class Validator (process):
             tc = self.pacemaker.process_remote_timeout(timeout_msg)
             '''if tc != ⊥ then'''
             if tc is not None:
+                send(('TC or QC generated'), to=self.networkPlayground)
+
                 LOGGER.log_action("Generated a Timeout Certificate", tc)
                 '''process certificate qc(qc)
+                
                 process new round event(⊥)'''
                 output("TC GENERATED FOR ROUND ", tc.round)
                 self.pacemaker.advance_round_tc(tc)
