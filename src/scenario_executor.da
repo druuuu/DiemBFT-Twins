@@ -223,7 +223,7 @@ class ScenarioExecutor(process):
 
         # Setup network_playground
         setup(networkPlayground, (self, nValidators, nTwins, self.scenario,
-                                  node_number_to_pid_mapping, pid_to_node_number_mapping, node_to_twin, twin_to_node))
+                                  node_number_to_pid_mapping, pid_to_node_number_mapping, node_to_twin, twin_to_node, self.config_id, self.scenario_id))
         # output(twins)
         # Start all processes
         start(networkPlayground | twins | validators)

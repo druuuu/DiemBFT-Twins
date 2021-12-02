@@ -9,7 +9,8 @@ class LOGGER:
     replicas = []
     clients = []
     filename = ""
-    # np = None
+    np = None
+    scenario_executor = None
 
     def log_event(event, msg_type, msg, proc=None):
         # print(LOGGER.np)
@@ -24,6 +25,10 @@ class LOGGER:
             other_proc = "validator_" + str(LOGGER.replicas.index(proc))
         # elif proc in LOGGER.clients:
             # other_proc = "client_" + str(LOGGER.clients.index(proc))
+        elif proc == LOGGER.np:
+            other_proc = "network_playground"
+        elif proc == LOGGER.scenario_executor:
+            other_proc = "scenario_executor"
         else:
             other_proc = "parent_process"
 
@@ -47,6 +52,34 @@ class LOGGER:
         )
         f.close()
 
+    def log_np_event(event, msg_type, source_node, destination_nodes, round, msg=None, *params):
+        
+        if msg != None and hasattr(msg, '__dict__'):
+            msg = todict(msg)
+
+        f = open(LOGGER.filename, 'a+')
+        # event, msg_type, source_node, destination_nodes, round=None
+
+        p_list = []
+        for p in params:
+            if p != None and hasattr(p, '__dict__'):
+                p = todict(p)
+            p_list.append(p)
+
+        print(
+            "Timestamp:", datetime.datetime.now(), "|",
+            # "ProcessId:", LOGGER.process_id, "|",
+            "Event:", event, "|",
+            "MsgType:", msg_type, "|",
+            "From:", source_node, "|",
+            "To:", str(destination_nodes), "|",
+            "In Round:", round,"|",
+            "Msg:", msg,"|",
+            p_list,
+            file=f
+        )
+        f.close()
+
     def log_action(action, obj):
         if obj != None and hasattr(obj, '__dict__'):
             obj = todict(obj)
@@ -62,6 +95,21 @@ class LOGGER:
         f.close()
 
     def log(funcname, *params): pass
+    #     p_list = []
+    #     for p in params:
+    #         if p != None and hasattr(p, '__dict__'):
+    #             p = todict(p)
+    #         p_list.append(p)
+
+    #     f = open(LOGGER.filename, 'a+')
+    #     print(
+    #         "Timestamp:", datetime.datetime.now(), "|",
+    #         "ProcessId:", LOGGER.process_id, "|",
+    #         "Objects:", str(p_list), "|",
+    #         file=f
+    #     )
+    #     f.close()
+
     # timestamp = datetime.datetime.now()
     # f = open(LOGGER.filename, 'a+')
     # p_list = []
