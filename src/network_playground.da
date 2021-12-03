@@ -117,8 +117,6 @@ class NetworkPlayground(process):
 
     ##########################################################
 
-
-
     ##################   Receive Handlers   ##################
 
     ''' Receive handler for proposal messages '''
@@ -178,7 +176,6 @@ class NetworkPlayground(process):
                                 destination_nodes, msg_round, proposal_msg)
             self.send_to_nodes('Proposal', destination_nodes,
                                proposal_msg, actual_sender_node)
-
 
     ''' Receive handler for vote messages '''
     def receive(msg=('Vote', vote_msg, destination_node_num), from_=msg_sender):
@@ -243,7 +240,6 @@ class NetworkPlayground(process):
 
             self.send_to_nodes('Vote', destination_nodes,
                                vote_msg, actual_sender_node)
-
 
     ''' Receive handler for timeout messages '''
     def receive(msg=('Timeout', timeout_msg), from_=msg_sender):

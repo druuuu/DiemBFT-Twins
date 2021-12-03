@@ -159,9 +159,7 @@ def main():
     for config in configs:
         os.makedirs('../logs/config' + str(config_id))
         os.makedirs('../ledgers/config' + str(config_id))
-        # print(config)
         if not is_config_valid(config):
-            #         # print("here")
             output("The provided config", config,
                    "is not valid. Skipping this config.")
             continue
