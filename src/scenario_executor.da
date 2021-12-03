@@ -1,6 +1,5 @@
 # type:ignore
-from config import configs
-from config_test_generator import config_tests
+from config import configs, config_tests
 from ScenarioGenerator import ScenarioGenerator
 import sys
 import json
@@ -155,35 +154,36 @@ def main():
     if os.path.exists('../ledgers/') and os.path.isdir('../ledgers/'):
         shutil.rmtree('../ledgers/')
 
-    config_id = 0
-    for config in configs:
-        os.makedirs('../logs/config' + str(config_id))
-        os.makedirs('../ledgers/config' + str(config_id))
-        # print(config)
+    config_number = 1
+    if len(sys.argv) > 1:
+        config_number = int(sys.argv[1])
+    os.makedirs('../logs/config' + str(config_number))
+    os.makedirs('../ledgers/config' + str(config_number))
+    # print(config)
+
+    scenario_file = open(SCENARIOS_FILE)
+    scenario_id = 0
+    json_content = json.load(scenario_file)
+
+    for each_scenario in json_content:
+        config = configs[config_number]
+        config["nvalidators"] = each_scenario["number_of_nodes"]
+        config["nfaulty"] = each_scenario["number_of_twins"]
         if not is_config_valid(config):
-            #         # print("here")
             output("The provided config", config,
                    "is not valid. Skipping this config.")
             continue
+        os.makedirs('../logs/config' + str(config_number) +
+                    '/scenario'+str(scenario_id))
+        os.makedirs('../ledgers/config' + str(config_number) +
+                    '/scenario'+str(scenario_id))
+        scenario_executor = new(ScenarioExecutor, num=1)
+        setup(scenario_executor, (config, config_number, each_scenario, scenario_id))
+        start(scenario_executor)
 
-        scenario_file = open(SCENARIOS_FILE)
-        scenario_id = 0
-        json_content = json.load(scenario_file)
-        for each_scenario in json_content:
-            os.makedirs('../logs/config' + str(config_id) +
-                        '/scenario'+str(scenario_id))
-            os.makedirs('../ledgers/config' + str(config_id) +
-                        '/scenario'+str(scenario_id))
-            scenario_executor = new(ScenarioExecutor, num=1)
-
-            ''' Setup and start scenario executor'''
-            setup(scenario_executor, (config, config_id, each_scenario, scenario_id))
-            start(scenario_executor)
-
-            ''' Await for scenario executor to end'''
-            await(received(('Ask main to end',)))
-
-            # output("88888888888888888")
-            scenario_id += 1
-        config_id += 1
+        # await(some(received(("Next scenario",), from_=scenario_executor)))
+        await(received(('Ask main to end',)))
+        output("88888888888888888")
+        scenario_id += 1
+    config_id += 1
     exit()
