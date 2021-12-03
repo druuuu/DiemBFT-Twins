@@ -31,6 +31,7 @@ class ScenarioExecutor(process):
             + '/scenario'+str(scenario_id)+'/' \
             + LOGGER.process_id + ".log"
 
+        LOGGER.log_action("Initial scenario configuration", scenario)
         self.scenario = scenario
         self.scenario_id = scenario_id
         self.config = config
