@@ -7,14 +7,17 @@ from pprint import pprint
 from itertools import combinations, permutations
 from os.path import exists
 import itertools
+
+
 class ScenarioGenerator:
     def __init__(self):
         self.all_first_conbinations = []
-        self.msg_type = [[], ["Proposal"] ,["Voting"], ["Timeout"], ["Proposal", "Voting"], ["Voting", "Timeout"],["Proposal", "Timeout"], ["Proposal", "Voting", "Timeout"]]
+        self.msg_type = [[], ["Proposal"], ["Voting"], ["Timeout"], ["Proposal", "Voting"], [
+            "Voting", "Timeout"], ["Proposal", "Timeout"], ["Proposal", "Voting", "Timeout"]]
         self.comb = []
-        
-        
+
     # Decide the max number of message drops combinations.
+
     def create_msg_drop_permutstions(self, max_message_drops, total_number_of_nodes):
         if max_message_drops == 0:
             self.max_drop_combinations = copy.deepcopy(self.msg_type[0:1])
@@ -39,7 +42,7 @@ class ScenarioGenerator:
         return res
 
     # Recursive helper function to create the partition combinations.
-    def genp(self, parts:list, empty, n, k, m, lastfilled):
+    def genp(self, parts: list, empty, n, k, m, lastfilled):
         if m == n:
             self.all_first_conbinations.append(copy.deepcopy(parts))
             return
@@ -84,7 +87,7 @@ class ScenarioGenerator:
                         flag = True
                 if flag:
                     partitions.append(parts)
-        
+
         combinations_of_msg_type_partition = []
 
         for p in partitions:
@@ -96,51 +99,58 @@ class ScenarioGenerator:
     # Partition and leader combinations for step 2
     def step2_partitions(self, partition_sets, number_of_twins, number_of_nodes, leaders_only_faulty):
         partition_with_leaders = []
-        
+
         # Iterate over paritions
         for p in partition_sets:
-            
+
             # Map partitions to all possible leaders.
             for l in range(0, number_of_twins):
-                partition_with_leaders.append({"partitions": p[0], "message_types": p[1], "leader":[l]})
-            
+                partition_with_leaders.append(
+                    {"partitions": p[0], "message_types": p[1], "leader": [l]})
+
             # Check for faulty leader only condition
             if not leaders_only_faulty:
                 for l in range(number_of_twins, number_of_nodes):
-                    partition_with_leaders.append({"partitions": p[0], "message_types": p[1], "leader":[l]})
+                    partition_with_leaders.append(
+                        {"partitions": p[0], "message_types": p[1], "leader": [l]})
 
         return partition_with_leaders
 
     # Partition, leaders and rounds combinations for step 3
     def step3_partitions(self, number_of_configs_pruned, selection_type_for_configs_pruned, with_replacement, rounds, pruned_partition_with_leaders, number_of_nodes, number_of_twins, config_number, step3_paper_execution):
         configs = []
-        default_full_partition =  [i for i in range(number_of_nodes + number_of_twins)]
+        default_full_partition = [i for i in range(
+            number_of_nodes + number_of_twins)]
         # Creating millions of combinations just to select 10 to 15 for testing wasn't very efficient for normal execution.
         # Therefore iterate over the total required number of combinations and randomly generating possible combinations
 
         # Implementation based on the way it has been asked in paper where they calculate each permutation for each round
         if step3_paper_execution:
             all_permutations = []
-            
+
             # based on the type of permutation calculate all permutaions.
             if with_replacement:
-                all_permutations = self.perm(rounds, pruned_partition_with_leaders)
-                print("----------",len(all_permutations))
+                all_permutations = self.perm(
+                    rounds, pruned_partition_with_leaders)
+                print("----------", len(all_permutations))
             else:
                 if rounds > len(pruned_partition_with_leaders):
                     print("INVALID CONFIG")
                     exit()
-                all_permutations_object = permutations(pruned_partition_with_leaders, rounds)
+                all_permutations_object = permutations(
+                    pruned_partition_with_leaders, rounds)
                 for x in all_permutations_object:
                     all_permutations.append(x)
-                print("**********",len(all_permutations))
+                print("**********", len(all_permutations))
 
             # prun from all permutations based on the type of pruning.
             if selection_type_for_configs_pruned == "RANDOM":
-                pruned_configs = [all_permutations[random.randint(0, len(all_permutations) - 1)] for _ in range(number_of_configs_pruned)]
+                pruned_configs = [all_permutations[random.randint(
+                    0, len(all_permutations) - 1)] for _ in range(number_of_configs_pruned)]
             else:
-                pruned_configs = [all_permutations[i] for i in range(number_of_configs_pruned)]
-            
+                pruned_configs = [all_permutations[i]
+                                  for i in range(number_of_configs_pruned)]
+
             leaders = []
             partitions = []
             message_types = []
@@ -161,17 +171,20 @@ class ScenarioGenerator:
                 for _ in range(3):
                     partitions.append([default_full_partition])
                     message_types.append([])
-                    leaders.append(random_for_paper.randint(number_of_twins, number_of_nodes))
-                
-                scenario = {"number_of_nodes": number_of_nodes, "number_of_twins": number_of_twins,"partitions" : partitions, "leaders": leaders, "message_types": message_types}
+                    leaders.append(random_for_paper.randint(
+                        number_of_twins, number_of_nodes))
+
+                scenario = {"number_of_nodes": number_of_nodes, "number_of_twins": number_of_twins,
+                            "partitions": partitions, "leaders": leaders, "message_types": message_types}
                 configs.append(scenario)
-            
+
             # Write all generated scenarios to json file
-            config_name  = "../scenarioconfig/config" + str(config_number) + ".json"
+            config_name = "../scenarioconfig/config" + \
+                str(config_number) + ".json"
             with open(config_name, 'w') as f:
                 json_str = json.dumps(configs)
                 f.write(json_str)
-        
+
         # Efficient scenario generation. Might not create all possible test cases but useful for testing different inputs.
         else:
             seeds = 0
@@ -183,13 +196,17 @@ class ScenarioGenerator:
                 # Check for the type of pruning
                 if selection_type_for_configs_pruned == "RANDOM":
 
-                    # Select for pruning with or without replacement of round 
+                    # Select for pruning with or without replacement of round
                     if with_replacement:
                         for i in range(rounds):
-                            idx = random.randint(0, len(pruned_partition_with_leaders)-1)
-                            leaders.append(pruned_partition_with_leaders[idx]["leader"][0])
-                            partitions.append(pruned_partition_with_leaders[idx]["partitions"])
-                            message_types.append(pruned_partition_with_leaders[idx]["message_types"])
+                            idx = random.randint(
+                                0, len(pruned_partition_with_leaders)-1)
+                            leaders.append(
+                                pruned_partition_with_leaders[idx]["leader"][0])
+                            partitions.append(
+                                pruned_partition_with_leaders[idx]["partitions"])
+                            message_types.append(
+                                pruned_partition_with_leaders[idx]["message_types"])
 
                     else:
 
@@ -200,90 +217,110 @@ class ScenarioGenerator:
                             print("INVALID CONFIG")
                             exit()
                         while i < rounds:
-                            itr = random.randint(0, len(pruned_partition_with_leaders)-1)
+                            itr = random.randint(
+                                0, len(pruned_partition_with_leaders)-1)
                             if itr not in already_included_cofig:
-                                leaders.append(pruned_partition_with_leaders[itr]["leader"][0])
-                                partitions.append(pruned_partition_with_leaders[itr]["partitions"])
-                                message_types.append(pruned_partition_with_leaders[itr]["message_types"])
+                                leaders.append(
+                                    pruned_partition_with_leaders[itr]["leader"][0])
+                                partitions.append(
+                                    pruned_partition_with_leaders[itr]["partitions"])
+                                message_types.append(
+                                    pruned_partition_with_leaders[itr]["message_types"])
                                 i += 1
                                 already_included_cofig.add(itr)
                     for _ in range(3):
                         partitions.append([default_full_partition])
                         message_types.append([])
-                        leaders.append(random.randint(number_of_twins, number_of_nodes))
+                        leaders.append(random.randint(
+                            number_of_twins, number_of_nodes))
                 else:
                     # Use a fixed seed in random generation to get deterministic results
                     for i in range(rounds):
                         random_deterministic = random.Random()
                         random_deterministic.seed(seeds)
-                        seeds +=1
-                        idx = random_deterministic.randint(0, len(pruned_partition_with_leaders)-1)
-                        leaders.append(pruned_partition_with_leaders[idx]["leader"][0])
-                        partitions.append(pruned_partition_with_leaders[idx]["partitions"])
-                        message_types.append(pruned_partition_with_leaders[idx]["message_types"])
-                    
+                        seeds += 1
+                        idx = random_deterministic.randint(
+                            0, len(pruned_partition_with_leaders)-1)
+                        leaders.append(
+                            pruned_partition_with_leaders[idx]["leader"][0])
+                        partitions.append(
+                            pruned_partition_with_leaders[idx]["partitions"])
+                        message_types.append(
+                            pruned_partition_with_leaders[idx]["message_types"])
+
                     for _ in range(3):
                         partitions.append([default_full_partition])
                         message_types.append([])
-                        leaders.append(random_deterministic.randint(number_of_twins, number_of_nodes))
-                
-                scenario = {"number_of_nodes": number_of_nodes, "number_of_twins": number_of_twins,"partitions" : partitions, "leaders": leaders, "message_types": message_types}
-                
+                        leaders.append(random_deterministic.randint(
+                            number_of_twins, number_of_nodes))
+
+                scenario = {"number_of_nodes": number_of_nodes, "number_of_twins": number_of_twins,
+                            "partitions": partitions, "leaders": leaders, "message_types": message_types}
+
                 # write scenario to file
                 configs.append(scenario)
 
             # Write all generated scenarios to json file
-            config_name  = "../scenarioconfig/config" + str(config_number) + ".json"
+            config_name = "../scenarioconfig/config" + \
+                str(config_number) + ".json"
             with open(config_name, 'w') as f:
                 json_str = json.dumps(configs)
                 f.write(json_str)
 
     def generate_scenario(self,
-                          config_number = 1,
-                          number_of_nodes = 4,
-                          number_of_twins = 1,
-                          rounds = 10,
+                          config_number=1,
+                          number_of_nodes=4,
+                          number_of_twins=1,
+                          rounds=10,
                           number_of_partition=3,
                           leaders_only_faulty=False,
                           number_of_partitions_pruned=4,
                           selection_type_for_partitions="RANDOM",
                           number_of_partitions_leaders_pruned=4,
                           selection_type_for_partitions_leaders_pruned="RANDOM",
-                          max_message_drops = 2,
+                          max_message_drops=2,
                           number_of_configs_pruned=4,
                           selection_type_for_configs_pruned="RANDOM",
-                          step3_paper_execution  = True,
+                          step3_paper_execution=True,
                           with_replacement=True,
                           ):
 
         # Generate all possible partition sets based on the
         total_number_of_nodes = number_of_nodes + number_of_twins
 
-        self.create_msg_drop_permutstions(max_message_drops, total_number_of_nodes)
+        self.create_msg_drop_permutstions(
+            max_message_drops, total_number_of_nodes)
 
         # Generate partitions based on step 1
-        partitions = self.step1_partitions(total_number_of_nodes, number_of_partition, number_of_nodes, number_of_twins)
- 
+        partitions = self.step1_partitions(
+            total_number_of_nodes, number_of_partition, number_of_nodes, number_of_twins)
+
         # Pruning partitions after step 1
         partition_sets = []
         if selection_type_for_partitions == "RANDOM":
-            partition_sets = [partitions[random.randint(0, len(partitions)-1)] for _ in range(number_of_partitions_pruned)]
+            partition_sets = [partitions[random.randint(
+                0, len(partitions)-1)] for _ in range(number_of_partitions_pruned)]
         else:
-            partition_sets = [partitions[i] for i in range(number_of_partitions_pruned)]
+            partition_sets = [partitions[i]
+                              for i in range(number_of_partitions_pruned)]
 
-        
         # Generate partitions with leaders based on step 2
-        partition_with_leaders = self.step2_partitions(partition_sets, number_of_twins, number_of_nodes, leaders_only_faulty)
-        
+        partition_with_leaders = self.step2_partitions(
+            partition_sets, number_of_twins, number_of_nodes, leaders_only_faulty)
+
         # Pruning partitions and leader combination after step 2
         pruned_partition_with_leaders = []
         if selection_type_for_partitions_leaders_pruned == "RANDOM":
-            pruned_partition_with_leaders = [partition_with_leaders[random.randint(0, len(partition_with_leaders) - 1)] for _ in range(number_of_partitions_leaders_pruned)]
+            pruned_partition_with_leaders = [partition_with_leaders[random.randint(0, len(
+                partition_with_leaders) - 1)] for _ in range(number_of_partitions_leaders_pruned)]
         else:
-            pruned_partition_with_leaders = [partition_with_leaders[i] for i in range(number_of_partitions_leaders_pruned)]
+            pruned_partition_with_leaders = [
+                partition_with_leaders[i] for i in range(number_of_partitions_leaders_pruned)]
 
         # Step 3 function call
-        self.step3_partitions(number_of_configs_pruned, selection_type_for_configs_pruned, with_replacement, rounds, pruned_partition_with_leaders, number_of_nodes, number_of_twins, config_number, step3_paper_execution)
+        self.step3_partitions(number_of_configs_pruned, selection_type_for_configs_pruned, with_replacement, rounds,
+                              pruned_partition_with_leaders, number_of_nodes, number_of_twins, config_number, step3_paper_execution)
+
 
 if __name__ == "__main__":
     sg = ScenarioGenerator()
@@ -292,19 +329,21 @@ if __name__ == "__main__":
         config_number = int(sys.argv[1])
     pprint(config_tests[config_number])
     sg.generate_scenario(
-                    config_number = config_number,
-                    number_of_nodes = config_tests[config_number]["number_of_nodes"],
-                    number_of_twins = config_tests[config_number]["number_of_twins"],
-                    rounds = config_tests[config_number]["rounds"],
-                    number_of_partition = config_tests[config_number]["number_of_partition"],
-                    leaders_only_faulty = config_tests[config_number]["leaders_only_faulty"],
-                    number_of_partitions_pruned = config_tests[config_number]["number_of_partitions_pruned"],
-                    selection_type_for_partitions = config_tests[config_number]["selection_type_for_partitions"],
-                    number_of_partitions_leaders_pruned = config_tests[config_number]["number_of_partitions_leaders_pruned"],
-                    selection_type_for_partitions_leaders_pruned = config_tests[config_number]["selection_type_for_partitions_leaders_pruned"],
-                    max_message_drops = config_tests[config_number]["max_message_drops"],
-                    number_of_configs_pruned = config_tests[config_number]["number_of_configs_pruned"],
-                    selection_type_for_configs_pruned = config_tests[config_number]["selection_type_for_configs_pruned"],
-                    step3_paper_execution  = config_tests[config_number]["step3_paper_execution"],
-                    with_replacement = config_tests[config_number]["with_replacement"],
-                    )
+        config_number=config_number,
+        number_of_nodes=config_tests[config_number]["number_of_nodes"],
+        number_of_twins=config_tests[config_number]["number_of_twins"],
+        rounds=config_tests[config_number]["rounds"],
+        number_of_partition=config_tests[config_number]["number_of_partition"],
+        leaders_only_faulty=config_tests[config_number]["leaders_only_faulty"],
+        number_of_partitions_pruned=config_tests[config_number]["number_of_partitions_pruned"],
+        selection_type_for_partitions=config_tests[config_number]["selection_type_for_partitions"],
+        number_of_partitions_leaders_pruned=config_tests[
+            config_number]["number_of_partitions_leaders_pruned"],
+        selection_type_for_partitions_leaders_pruned=config_tests[
+            config_number]["selection_type_for_partitions_leaders_pruned"],
+        max_message_drops=config_tests[config_number]["max_message_drops"],
+        number_of_configs_pruned=config_tests[config_number]["number_of_configs_pruned"],
+        selection_type_for_configs_pruned=config_tests[config_number]["selection_type_for_configs_pruned"],
+        step3_paper_execution=config_tests[config_number]["step3_paper_execution"],
+        with_replacement=config_tests[config_number]["with_replacement"],
+    )

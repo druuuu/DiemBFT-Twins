@@ -89,7 +89,7 @@ class Validator (process):
         LOGGER.log_event('Sent', 'Timeout', timeout_msg, self.replicas)
 
     def receive(msg=('Stop Running',), from_=se):
-        # output(self.proposal_per_round)
+
         send(('Commit config', self.commit_config,), to=self.networkPlayground)
         exit()
 
@@ -112,18 +112,14 @@ class Validator (process):
         # output("await done")
         # await(received(('done',), from_=parent()))
         while True:
-            #     # if await(received(('done',), from_=se)):
-            #     #     self.done_flag = True
-            #     if await(received(('done',), from_=self.networkPlayground)):
-            #         break
+
             if await(received(('done',))):
                 output("reached here")
                 break
-        #         # self.livenessFlag = False
+
             elif timeout(100):
                 output("process too long")
                 break
-        #         # output("liveness violated")
         output('terminating')
         exit()
 

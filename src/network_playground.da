@@ -404,7 +404,7 @@ class NetworkPlayground(process):
                     'Received', 'Commit config', None, None, commit_config)
                 output("received something")
 
-            elif timeout(10):
+            elif timeout(30):
                 send(('Stop Processes',), to=self.scenario_executor_pid)
                 LOGGER.log_action(" Timed out ", None)
                 LOGGER.log_np_event('Sent', 'Stop Processes',

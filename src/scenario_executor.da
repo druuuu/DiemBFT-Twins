@@ -18,7 +18,8 @@ from pprint import pprint
 # sys.path.append(os.path.dirname(cwd)+'/config')
 # print(sys.path)
 
-SCENARIOS_FILE = "scenario_temp.json"
+SCENARIOS_FILE = "../scenarioconfig/config1.json"
+# SCENARIOS_FILE = "scenarios8.json"
 
 
 class ScenarioExecutor(process):
@@ -41,11 +42,6 @@ class ScenarioExecutor(process):
 
         nValidators = self.scenario['number_of_nodes']
         nTwins = self.scenario['number_of_twins']
-        # current_scenario = scenario['scenario']
-        # current_scenario = self.scenario
-        # scenario variable initialization
-        # self.nValidators = nValidators
-        # self.nTwins = nTwins
         leaders = self.scenario['leaders']
 
         validator_private_keys = {}
@@ -55,13 +51,8 @@ class ScenarioExecutor(process):
         twin_to_node = {}
         node_to_twin = {}
 
-        # output(nValidators)
-        # output(nTwins)
-        output(self.scenario)
-
         validators = new(Validator, num=nValidators)
-        # twins = None
-        # Create network playground object
+
         networkPlayground = new(NetworkPlayground, num=1)
         LOGGER.np = networkPlayground
 
@@ -73,13 +64,12 @@ class ScenarioExecutor(process):
             node_number_to_pid_mapping[personal_id] = validator
             pid_to_node_number_mapping[validator] = personal_id
 
-        # Setup the non-faulty validators
+        ''' Setup validators '''
         for personal_id, validator in enumerate(validators):
             setup(validator, (self.config, self.config_id, self.scenario, self.scenario_id, personal_id, list(validators), validator_private_keys[personal_id], validator_public_keys,
                               leaders, networkPlayground, personal_id, self))
 
-        # Define create_twins funtion
-        # def create_twins():
+        ''' Setup twins'''
         twins = new(Validator, num=nTwins)
         for personal_id, twin in enumerate(twins):
             setup(twin, (self.config, self.config_id, self.scenario, self.scenario_id, personal_id, list(validators), validator_private_keys[personal_id], validator_public_keys,
@@ -89,45 +79,45 @@ class ScenarioExecutor(process):
             node_number_to_pid_mapping[personal_id+nValidators] = twin
             pid_to_node_number_mapping[twin] = personal_id+nValidators
 
-        # Create the twins
-        # create_twins()
-
-        # Setup network_playground
+        '''Setup Network Playground'''
         setup(networkPlayground, (self, nValidators, nTwins, self.scenario,
                                   node_number_to_pid_mapping, pid_to_node_number_mapping, node_to_twin, twin_to_node, self.config_id, self.scenario_id))
-        # output(twins)
-        # Start all processes
+
+        ''' Start Network Playground, Twins, Validators '''
         start(networkPlayground | twins | validators)
         LOGGER.log_action(
             'STARTED validators, twins and network playground', None)
 
+        # Scenario Executor waits on Stop Processes.
+        # Network Playground informs scenario executor when to stop runing the validators+twins
         await(received(('Stop Processes',)))
 
-        output("RECEIVED QUIT REQUEST")
-        LOGGER.log_event('RECEIVED', 'QUIT REQUEST', {}, networkPlayground)
+        LOGGER.log_event(
+            'RECEIVED', 'STOP PROCESSES', {}, networkPlayground)
 
+        ''' Ask validators + twins to stop '''
         send(('Stop Running',), to=validators | twins)
         LOGGER.log_np_event('Sent', 'Stop Running', self, validators | twins)
 
         await(self.doneFlag)
 
     def receive(msg=("forward commit config", commit_config), from_=np):
-        LOGGER.log_event('RECEIVED', 'forward commit config',
+        LOGGER.log_event('RECEIVED', ' Commit Config',
                          commit_config, np)
-        send(('Ask main to end',), to=parent())
         LOGGER.log_event('SENT', 'Ask main to end', None, parent())
-        output("Final ", commit_config)
+
+        # Call Safety test on commit config
         if safety_test(commit_config):
             output("Safety Upheld")
         else:
             output("Safety Violated")
+
         LOGGER.log_action("Final ", commit_config)
-        # output(commit_config)
+
+        send(('Ask main to end',), to=parent())
+
+        ''''''
         exit()
-        # send(("done",), to=validators)
-        # send(("done",), to=twins)
-        # send(('done',), to=(validators | twins))
-# send(('Quit Process'), to=self.scenario_executor_pid)
 
     def safety_test(commit_config):
         number_of_ledgers = len(commit_config)
@@ -220,7 +210,8 @@ def main():
 
             # await(some(received(("Next scenario",), from_=scenario_executor)))
             await(received(('Ask main to end',)))
-            output("88888888888888888")
+
+            # output("88888888888888888")
             scenario_id += 1
         config_id += 1
     exit()
