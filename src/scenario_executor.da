@@ -13,13 +13,8 @@ import shutil
 from pprint import pprint
 
 
-# dir_path = os.path.dirname(os.path.realpath(__file__))
-# cwd = os.getcwd()
-# sys.path.append(os.path.dirname(cwd)+'/config')
-# print(sys.path)
-
-SCENARIOS_FILE = "../scenarioconfig/config1.json"
-# SCENARIOS_FILE = "scenarios8.json"
+# SCENARIOS_FILE = "../scenarioconfig/config1.json"
+SCENARIOS_FILE = "scenarios7.json"
 
 
 class ScenarioExecutor(process):
@@ -37,7 +32,6 @@ class ScenarioExecutor(process):
         self.config = config
         self.config_id = config_id
         self.doneFlag = False
-        # print(self.config_id)
 
     def run():
 
@@ -117,23 +111,19 @@ class ScenarioExecutor(process):
 
         send(('Ask main to end',), to=parent())
 
-        ''''''
+        '''Exit scenario executor'''
         exit()
 
     def safety_test(commit_config):
         number_of_ledgers = len(commit_config)
         max_rounds = -1
         for ledger in commit_config:
-            # print([ledger])
             max_rounds = max(max_rounds, len(commit_config[ledger]))
-        # for c in commit_config:
-
         for r in range(max_rounds):
             curr = None
             for ledger in commit_config:
                 if curr and r < len(commit_config[ledger]):
                     if curr != str(commit_config[ledger][r]):
-                        output(curr, commit_config[ledger][r])
                         return False
                 if not curr and r < len(commit_config[ledger]):
                     curr = str(commit_config[ledger][r])
@@ -165,27 +155,6 @@ def main():
     if os.path.exists('../ledgers/') and os.path.isdir('../ledgers/'):
         shutil.rmtree('../ledgers/')
 
-    # TODO: Generate scenarios
-    # sg = ScenarioGenerator()
-    # config_number = 1
-    # pprint(config_tests[config_number])
-    # sg.generate_scenario(
-    #                 config_number = config_number,
-    #                 number_of_nodes = config_tests[config_number]["number_of_nodes"],
-    #                 number_of_twins = config_tests[config_number]["number_of_twins"],
-    #                 rounds = config_tests[config_number]["rounds"],
-    #                 number_of_partition = config_tests[config_number]["number_of_partition"],
-    #                 leaders_only_faulty = config_tests[config_number]["leaders_only_faulty"],
-    #                 number_of_partitions_pruned = config_tests[config_number]["number_of_partitions_pruned"],
-    #                 selection_type_for_partitions = config_tests[config_number]["selection_type_for_partitions"],
-    #                 number_of_partitions_leaders_pruned = config_tests[config_number]["number_of_partitions_leaders_pruned"],
-    #                 selection_type_for_partitions_leaders_pruned = config_tests[config_number]["selection_type_for_partitions_leaders_pruned"],
-    #                 max_message_drops = config_tests[config_number]["max_message_drops"],
-    #                 number_of_configs_pruned = config_tests[config_number]["number_of_configs_pruned"],
-    #                 selection_type_for_configs_pruned = config_tests[config_number]["selection_type_for_configs_pruned"],
-    #                 step3_paper_execution  = config_tests[config_number]["step3_paper_execution"],
-    #                 with_replacement = config_tests[config_number]["with_replacement"],
-    #                 )
     config_id = 0
     for config in configs:
         os.makedirs('../logs/config' + str(config_id))
@@ -206,10 +175,12 @@ def main():
             os.makedirs('../ledgers/config' + str(config_id) +
                         '/scenario'+str(scenario_id))
             scenario_executor = new(ScenarioExecutor, num=1)
+
+            ''' Setup and start scenario executor'''
             setup(scenario_executor, (config, config_id, each_scenario, scenario_id))
             start(scenario_executor)
 
-            # await(some(received(("Next scenario",), from_=scenario_executor)))
+            ''' Await for scenario executor to end'''
             await(received(('Ask main to end',)))
 
             # output("88888888888888888")

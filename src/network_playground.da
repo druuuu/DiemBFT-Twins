@@ -6,11 +6,9 @@ from logger_util import LOGGER
 
 class NetworkPlayground(process):
     def setup(scenario_executor_pid, number_of_nodes: int, number_of_twins: int, scenario, node_number_to_pid_mapping, pid_to_node_number_mapping, node_to_twin, twin_to_node, config_id, scenario_id):
-        # self.rounds = len(getObjectFromPath(scenario, 'partitions'))
-        # output("########", LOGGER.networkPlayground)
+
         LOGGER.np = self
         LOGGER.scenario_executor = scenario_executor_pid
-        # output("########", LOGGER.networkPlayground)
 
         LOGGER.process_id = "network_playground"
         LOGGER.filename = '../logs/config' + str(config_id) + '/' \
@@ -111,7 +109,6 @@ class NetworkPlayground(process):
     ''' sends the msg to the appropriate nodes, attaching sender node in message '''
     def send_to_nodes(msg_name, destination_nodes, msg, sender):
         node_pids = []
-        # output("sending", msg_name, " to ", destination_nodes, "from ", sender)
 
         for node_num in destination_nodes:
             node_pids.append(self.node_number_to_pid_mapping.get(node_num))
@@ -131,8 +128,7 @@ class NetworkPlayground(process):
 
         ''' if msg_round exceeds even the over estimated round, ignore '''
         if msg_round >= self.rounds + 3:
-            output("Proposal Sending quit process")
-            LOGGER.log_event('Sent', 'Quit Process', {},
+            LOGGER.log_event('Sent', 'Stop Processes', {},
                              self.scenario_executor_pid)
             send(('Stop Processes',), to=self.scenario_executor_pid)
 
@@ -158,8 +154,7 @@ class NetworkPlayground(process):
             # check if msg is eligible for intra partition dropping
             if to_drop(msg_sender_number, msg_round, msg_partition_idx, MsgType.Proposal):
                 # drop this message, ignore
-                output("Dropping proposal from ", msg_sender_number,
-                       " to ", destination_nodes, "in round ", msg_round)
+
                 LOGGER.log_np_event('Dropped msg', 'Proposal', msg_sender_number,
                                     destination_nodes, msg_round, proposal_msg)
                 return
@@ -176,8 +171,7 @@ class NetworkPlayground(process):
             msg_sender_number)
 
         if len(destination_nodes) > 0:
-            output("Sending proposal from ", msg_sender_number,
-                   " to ", destination_nodes, "in round ", msg_round)
+
             LOGGER.log_np_event('Sent', 'Proposal', actual_sender_node,
                                 destination_nodes, msg_round, proposal_msg)
             self.send_to_nodes('Proposal', destination_nodes,
@@ -193,7 +187,7 @@ class NetworkPlayground(process):
 
         ''' if msg_round exceeds even the over estimated round, ignore '''
         if msg_round >= self.rounds + 3:
-            output("Vote Sending quit process")
+
             LOGGER.log_event('Sent', 'Stop Processes', {},
                              self.scenario_executor_pid)
             send(('Stop Processes',), to=self.scenario_executor_pid)
@@ -219,8 +213,7 @@ class NetworkPlayground(process):
 
             # check if msg is eligible for intra partition dropping
             if to_drop(msg_sender_number, msg_round, msg_partition_idx, MsgType.Vote):
-                output("Dropping vote from ", msg_sender_number,
-                       " to ", destination_nodes, "in round ", msg_round)
+
                 LOGGER.log_np_event('Dropped msg', 'Vote', msg_sender_number,
                                     destination_nodes, msg_round, vote_msg)
                 return
@@ -250,7 +243,7 @@ class NetworkPlayground(process):
     def receive(msg=('Timeout', timeout_msg), from_=msg_sender):
 
         msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
-        # output("want to timeout by ", msg_sender_number)
+
         msg_round = self.get_msg_round(timeout_msg, MsgType.Timeout)
 
         LOGGER.log_np_event('Received', 'Timeout', msg_sender_number,
@@ -258,7 +251,7 @@ class NetworkPlayground(process):
 
         ''' if msg_round exceeds even the over estimated round, ignore '''
         if msg_round >= self.rounds + 3:
-            output("Timeout Sending quit process")
+
             LOGGER.log_event('Sent', 'Stop Processes', {},
                              self.scenario_executor_pid)
             send(('Stop Processes',), to=self.scenario_executor_pid)
@@ -282,8 +275,6 @@ class NetworkPlayground(process):
             # check if msg is eligible for intra partition dropping
             if to_drop(msg_sender_number, msg_round, msg_partition_idx, MsgType.Timeout):
                 # drop this message, ignore
-                output("Dropping timeout from ", msg_sender_number,
-                       " to ", destination_nodes, "in round ", msg_round)
                 LOGGER.log_np_event('Dropped msg', 'Timeout', msg_sender_number,
                                     destination_nodes, msg_round, timeout_msg)
                 return
@@ -291,7 +282,6 @@ class NetworkPlayground(process):
             ''' When msg_round <= rounds, create partitions according to the scenario '''
             partition = self.get_partition_at_idx(
                 msg_partition_idx, msg_round, msg_sender)
-            # output(msg_sender_number, partition, msg_round)
             for node_number in partition:
                 destination_nodes.add(node_number)
 
@@ -300,47 +290,43 @@ class NetworkPlayground(process):
             msg_sender_number)
 
         if len(destination_nodes) > 0:
-            # output("Sending timeout from ", msg_sender_number,
-            #        " to ", destination_nodes, "in round ", msg_round)
+
             LOGGER.log_np_event('Sent', 'Timeout', actual_sender_node,
                                 destination_nodes, msg_round, timeout_msg)
             self.send_to_nodes('Timeout', destination_nodes,
                                timeout_msg, actual_sender_node)
 
-    # def receive(msg=('Stop Network Playground'), from_=se):
-    #     self.done_flag = True
-    #     output("Stopping")
-    #     exit()
-    #     output("Stopped")
-
+    ''' Receive handler for requesting sync up by a validator
+        Broadcasts this request to all other validators which help the node to sync up
+        past_round <- from, current_round <- to'''
     def receive(msg=('Sync up required', past_round, current_round), from_=msg_sender):
         LOGGER.log_np_event('Received', 'Sync up required', msg_sender,
-                            {}, current_round, None, past_round)
+                            {}, "from = "+str(past_round), None, "to = "+str(current_round))
         destination_nodes = list(self.pid_to_node_number_mapping.keys())
         destination_nodes.remove(msg_sender)
-        # msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
-        # actual_sender = self.replace_with_twin_if_needed(
-        #     msg_sender_number)
+
         send(('Sync up needed', past_round, current_round, msg_sender
               ), to=destination_nodes)
         LOGGER.log_np_event('Sent', 'Sync up needed', msg_sender,
-                            destination_nodes, current_round, None, past_round)
-        # def receive(msg=('Done',), from_=scenario_executor):
-        #     self.send_to_nodes()
-        #     send commmit config to scenario ...
-        #     pass
+                            destination_nodes, "from = "+str(past_round), None, "to = "+str(current_round))
 
         ##########################################################
 
+    ''' Recieve handlers for messages from validators containing information to be sent to lagging node'''
+    ''' proposals_map, sync_map <- Required data'''
+    ''' Requester <-  lagging node'''
     def receive(msg=("Sync up proposals", proposals_map, sync_map, requester),
                 from_=msg_sender):
+
         LOGGER.log_np_event('Received', 'Sync up proposals', msg_sender,
-                            {}, None, None, requester, proposals_map, sync_map)
+                            {}, None, None, "lagging_node = " + str(requester), "proposals_map = " + str(proposals_map), "sync_map = " + str(sync_map))
         send(("Sync up proposals", proposals_map, sync_map, msg_sender),
              to=requester)
         LOGGER.log_np_event('Sent', 'Sync up proposals', msg_sender,
-                            requester, None, None, proposals_map, sync_map)
+                            "lagging_node = " + str(requester), None, None, "proposals_map = " + str(proposals_map), "sync_map = " + str(sync_map))
 
+    ''' Receive handler for message from lagging_node informing others that its done syncing up
+        Broadcasts message to others nodes informing that lagging_node is done syncing up'''
     def receive(msg=("Done sync up"), from_=p):
         LOGGER.log_np_event('Received', 'Done sync up', p,
                             {}, None, None)
@@ -350,19 +336,22 @@ class NetworkPlayground(process):
         LOGGER.log_np_event('Sent', 'Done sync up', p,
                             destination_nodes, None, None)
 
+    '''Receive handler for message from a node which detects a lagging_node
+        Forwards to the lagging node the required rounds it needs to sync up
+        to_round <- round till which lagging_node should sync up
+        '''
     def receive(msg=("kindly sync up", to_round, behind_node), from_=msg_sender):
         LOGGER.log_np_event('Received', 'kindly sync up', msg_sender,
-                            {}, None, to_round, behind_node)
+                            {}, None, " to = "+str(to_round), behind_node)
         destination = []
         destination.append(self.node_number_to_pid_mapping[behind_node])
         if behind_node in self.node_to_twin:
             destination.append(
                 self.node_number_to_pid_mapping[self.node_to_twin[behind_node]])
-        # output("sending sync up request to ", destination)
-        # output("NP asking ", behind_node, "to sync up to ", to_round)
+
         send(("kindly sync up", to_round), to=destination)
         LOGGER.log_np_event('Sent', 'kindly sync up', msg_sender,
-                            destination, None, to_round, behind_node)
+                            destination, None, " to = "+str(to_round), behind_node)
 
     ''' Receive handler to inform network playground that liveness is upheld'''
     def receive(msg=('TC or QC generated'), from_=v):
@@ -371,11 +360,13 @@ class NetworkPlayground(process):
         self.livenessFlag = True
         LOGGER.log_action('Set livenessFlag to:', self.livenessFlag)
 
+    ''' Receive handler to receive commit configs from validators for safety testing.
+    Forwards these configs to the scenario executor once all validators have returned them
+    Exits network playground once this is forwarded'''
     def receive(msg=('Commit config', commit_config), from_=v):
         LOGGER.log_np_event('Received', 'Commit config', v,
                             None, None, commit_config)
         self.commit_config[v] = commit_config
-        output("Received ", commit_config, " from ", v)
         if len(self.commit_config) == len(self.pid_to_node_number_mapping):
             # output("Final ", self.commit_config)
             send(("forward commit config", self.commit_config), to=parent())
@@ -384,46 +375,19 @@ class NetworkPlayground(process):
             exit()
 
     def run():
-        # start timer here? or in setup itself?
         while not self.done_flag:
-
-            if await(received(('Stop Network Playground',), from_=self.scenario_executor_pid)):
-                LOGGER.log_np_event(
-                    'Received', 'Stop Network Playground', self.scenario_executor_pid, None, None)
-                self.done_flag = True
-                LOGGER.log_action('Set done_flag to:', self.done_flag)
-
-            elif await(self.livenessFlag):
+            if await(self.livenessFlag):
                 LOGGER.log_np_event(
                     'Flag changed', 'self.livenessFlag', None, None, None)
                 self.livenessFlag = False
                 LOGGER.log_action('Set livenessFlag to:', self.livenessFlag)
-
-            elif await(received(('Commit config', commit_config,))):
-                LOGGER.log_np_event(
-                    'Received', 'Commit config', None, None, commit_config)
-                output("received something")
 
             elif timeout(30):
                 send(('Stop Processes',), to=self.scenario_executor_pid)
                 LOGGER.log_action(" Timed out ", None)
                 LOGGER.log_np_event('Sent', 'Stop Processes',
                                     self.scenario_executor_pid, None, None)
-                # LOGGER.log_np_event('Sent', 'Stop Processes', self.scenario_executor_pid, None, None)
                 LOGGER.log_action(
                     " ******************** Liveness Violated ******************** ", None)
-                output("liveness violated")
-                # output("Final ", self.commit_config)
-                # exit()
-                # break
-            # elif await(each(v in list(self.pid_to_node_number_mapping.keys()), has=received(('Commit config', commit_config,), from_=v))):
-                # output("Received commit config from", v)
-
-            # await(some(received(('Pong',), clk=rclk), has=(rclk > clk)))
 
         exit()
-        # if await(receive(msg, destinations)):
-        #     pass
-        # elif timeout(6):
-        #     output("Liveness violated")
-        #     done_flag = True
