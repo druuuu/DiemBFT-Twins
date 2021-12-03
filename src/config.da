@@ -1,7 +1,158 @@
 from object_types import FailType, Failure, FailureConfig, MsgType
 
-configs = [
-    {
+config_tests = {
+    1 : {
+            "number_of_nodes" : 4,
+            "number_of_twins" : 1,
+            "rounds" : 7,
+            "number_of_partition" : 3,
+            "leaders_only_faulty" : False,
+            "number_of_partitions_pruned" : 4,
+            "selection_type_for_partitions" : "RANDOM",
+            "number_of_partitions_leaders_pruned" : 7,
+            "selection_type_for_partitions_leaders_pruned" : "RANDOM",
+            "max_message_drops" : 1,
+            "number_of_configs_pruned" : 10,
+            "selection_type_for_configs_pruned" : "RANDOM",
+            "step3_paper_execution": True,
+            "with_replacement" : False,
+        },
+    2 : {
+            "number_of_nodes" : 4,
+            "number_of_twins" : 1,
+            "rounds" : 10,
+            "number_of_partition" : 3,
+            "leaders_only_faulty" : False,
+            "number_of_partitions_pruned" : 4,
+            "selection_type_for_partitions" : "RANDOM",
+            "number_of_partitions_leaders_pruned" : 4,
+            "selection_type_for_partitions_leaders_pruned" : "RANDOM",
+            "max_message_drops" : 1,
+            "number_of_configs_pruned" : 10,
+            "selection_type_for_configs_pruned" : "RANDOM",
+            "step3_paper_execution": True,
+            "with_replacement" : True,
+    },
+    3 : {
+            "number_of_nodes" : 4,
+            "number_of_twins" : 1,
+            "rounds" : 7,
+            "number_of_partition" : 3,
+            "leaders_only_faulty" : True,
+            "number_of_partitions_pruned" : 4,
+            "selection_type_for_partitions" : "RANDOM",
+            "number_of_partitions_leaders_pruned" : 7,
+            "selection_type_for_partitions_leaders_pruned" : "RANDOM",
+            "max_message_drops" : 1,
+            "number_of_configs_pruned" : 10,
+            "selection_type_for_configs_pruned" : "RANDOM",
+            "step3_paper_execution": True,
+            "with_replacement" : False,
+    },
+    4 : {
+            "number_of_nodes" : 7,
+            "number_of_twins" : 2,
+            "rounds" : 7,
+            "number_of_partition" : 3,
+            "leaders_only_faulty" : True,
+            "number_of_partitions_pruned" : 4,
+            "selection_type_for_partitions" : "RANDOM",
+            "number_of_partitions_leaders_pruned" : 7,
+            "selection_type_for_partitions_leaders_pruned" : "RANDOM",
+            "max_message_drops" : 1,
+            "number_of_configs_pruned" : 10,
+            "selection_type_for_configs_pruned" : "RANDOM",
+            "step3_paper_execution": True,
+            "with_replacement" : False,
+        },
+    
+    5 : {
+            "number_of_nodes" : 4,
+            "number_of_twins" : 1,
+            "rounds" : 10,
+            "number_of_partition" : 4,
+            "leaders_only_faulty" : True,
+            "number_of_partitions_pruned" : 4,
+            "selection_type_for_partitions" : "RANDOM",
+            "number_of_partitions_leaders_pruned" : 10,
+            "selection_type_for_partitions_leaders_pruned" : "RANDOM",
+            "max_message_drops" : 1,
+            "number_of_configs_pruned" : 10,
+            "selection_type_for_configs_pruned" : "RANDOM",
+            "step3_paper_execution": False,
+            "with_replacement" : False,
+        },
+}
+
+
+
+configs = {
+    1 : {
+        'nvalidators': 4,
+        'nfaulty': 1,
+        'nclients': 3,
+        'nclientops': 2,
+        'sleeptime': 1,
+        'clienttimeout': 10,
+        'delta': 0.2,
+        'window_size': 5,
+        'exclude_size': 2,
+        'failure_config': FailureConfig(
+            failures=[],
+            seed=637713655
+        )
+    },
+
+    2 : {
+        'nvalidators': 4,
+        'nfaulty': 1,
+        'nclients': 3,
+        'nclientops': 2,
+        'sleeptime': 1,
+        'clienttimeout': 10,
+        'delta': 0.2,
+        'window_size': 5,
+        'exclude_size': 2,
+        'failure_config': FailureConfig(
+            failures=[],
+            seed=637713655
+        )
+    },
+
+    3 : {
+        'nvalidators': 4,
+        'nfaulty': 1,
+        'nclients': 3,
+        'nclientops': 2,
+        'sleeptime': 1,
+        'clienttimeout': 10,
+        'delta': 0.2,
+        'window_size': 5,
+        'exclude_size': 2,
+        'failure_config': FailureConfig(
+            failures=[],
+            seed=637713655
+        )
+    },
+
+    
+    4 : {
+        'nvalidators': 4,
+        'nfaulty': 1,
+        'nclients': 3,
+        'nclientops': 2,
+        'sleeptime': 1,
+        'clienttimeout': 10,
+        'delta': 0.2,
+        'window_size': 5,
+        'exclude_size': 2,
+        'failure_config': FailureConfig(
+            failures=[],
+            seed=637713655
+        )
+    },
+
+    5 : {
         'nvalidators': 4,
         'nfaulty': 1,
         'nclients': 3,
@@ -16,7 +167,44 @@ configs = [
             seed=637713655
         )
     }
-]
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # {
 #     'nvalidators': 4,
 #     'nfaulty': 1,
