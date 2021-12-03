@@ -7,24 +7,27 @@ from logger_util import LOGGER
 class NetworkPlayground(process):
     def setup(scenario_executor_pid, number_of_nodes: int, number_of_twins: int, scenario, node_number_to_pid_mapping, pid_to_node_number_mapping, node_to_twin, twin_to_node, config_id, scenario_id):
 
+        # Setting up logger
         LOGGER.np = self
         LOGGER.scenario_executor = scenario_executor_pid
-
         LOGGER.process_id = "network_playground"
         LOGGER.filename = '../logs/config' + str(config_id) + '/' \
             + '/scenario'+str(scenario_id)+'/' \
             + LOGGER.process_id + ".log"
 
-        self.scenario = scenario
-        self.rounds = len(scenario['leaders'])-3
-        self.commit_config = dict()
-        self.node_number_to_pid_mapping = node_number_to_pid_mapping
-        self.done_flag = False
-        self.livenessFlag = False
-        self.pid_to_node_number_mapping = pid_to_node_number_mapping
-        self.scenario_executor_pid = scenario_executor_pid
-        # Maintains record of rounds for which timeout msgs dropped for a particular node
-        self.node_to_timeout_drop_rounds = dict()
+        self.node_to_twin = node_to_twin    # hashmap mapping node(say 1) to its twin(say 5), as per our generated scenario design
+        self.twin_to_node = twin_to_node    # hashmap mapping twin(say 5) to its node(say 1), as per our generated scenario design
+        self.scenario = scenario   # current scenario hashmap containing partition and leader information
+        self.scenario_executor_pid = scenario_executor_pid    # process id of scenario executor used to communicate with scenario executor
+        self.rounds = len(scenario['leaders'])-3    # number of rounds after which there are no partitions
+        self.node_number_to_pid_mapping = node_number_to_pid_mapping     # hashmap that maps numbers generated in scenario generation for each validator to its corresponding process id created by scenario executor
+        self.pid_to_node_number_mapping = pid_to_node_number_mapping     # inverted hashmap of node_number_to_pid_mapping
+        self.node_to_timeout_drop_rounds = dict()    # map of node_number to list of rounds for which timeout msg has been dropped
+        self.commit_config = dict()    # hashmap of sender:[list of sender’s commit]
+        self.done_flag = False    # done_flag is set true when scenario_executor says it’s done 
+        self.livenessFlag = False    # livenessFlag indicates if liveness has been upheld
+
+
 
     ##################   Helper functions   ##################
 
@@ -300,7 +303,7 @@ class NetworkPlayground(process):
 
     ''' Receive handler for requesting sync up by a validator
         Broadcasts this request to all other validators which help the node to sync up
-        past_round <- from, current_round <- to'''
+        past_round <- from, current_round <- to '''
     def receive(msg=('Sync up required', past_round, current_round), from_=msg_sender):
         LOGGER.log_np_event('Received', 'Sync up required', msg_sender,
                             {}, "from = "+str(past_round), None, "to = "+str(current_round))
@@ -314,9 +317,9 @@ class NetworkPlayground(process):
 
         ##########################################################
 
-    ''' Recieve handlers for messages from validators containing information to be sent to lagging node'''
-    ''' proposals_map, sync_map <- Required data'''
-    ''' Requester <-  lagging node'''
+    ''' Recieve handlers for messages from validators containing information to be sent to lagging node
+        proposals_map, sync_map <- Required data
+        Requester <-  lagging node '''
     def receive(msg=("Sync up proposals", proposals_map, sync_map, requester),
                 from_=msg_sender):
 
