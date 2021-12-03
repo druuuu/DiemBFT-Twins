@@ -15,19 +15,26 @@ class NetworkPlayground(process):
             + '/scenario'+str(scenario_id)+'/' \
             + LOGGER.process_id + ".log"
 
-        self.node_to_twin = node_to_twin    # hashmap mapping node(say 1) to its twin(say 5), as per our generated scenario design
-        self.twin_to_node = twin_to_node    # hashmap mapping twin(say 5) to its node(say 1), as per our generated scenario design
-        self.scenario = scenario   # current scenario hashmap containing partition and leader information
-        self.scenario_executor_pid = scenario_executor_pid    # process id of scenario executor used to communicate with scenario executor
-        self.rounds = len(scenario['leaders'])-3    # number of rounds after which there are no partitions
-        self.node_number_to_pid_mapping = node_number_to_pid_mapping     # hashmap that maps numbers generated in scenario generation for each validator to its corresponding process id created by scenario executor
-        self.pid_to_node_number_mapping = pid_to_node_number_mapping     # inverted hashmap of node_number_to_pid_mapping
-        self.node_to_timeout_drop_rounds = dict()    # map of node_number to list of rounds for which timeout msg has been dropped
-        self.commit_config = dict()    # hashmap of sender:[list of sender’s commit]
-        self.done_flag = False    # done_flag is set true when scenario_executor says it’s done 
+        # hashmap mapping node(say 1) to its twin(say 5), as per our generated scenario design
+        self.node_to_twin = node_to_twin
+        # hashmap mapping twin(say 5) to its node(say 1), as per our generated scenario design
+        self.twin_to_node = twin_to_node
+        # current scenario hashmap containing partition and leader information
+        self.scenario = scenario
+        # process id of scenario executor used to communicate with scenario executor
+        self.scenario_executor_pid = scenario_executor_pid
+        # number of rounds after which there are no partitions
+        self.rounds = len(scenario['leaders'])-3
+        # hashmap that maps numbers generated in scenario generation for each validator to its corresponding process id created by scenario executor
+        self.node_number_to_pid_mapping = node_number_to_pid_mapping
+        # inverted hashmap of node_number_to_pid_mapping
+        self.pid_to_node_number_mapping = pid_to_node_number_mapping
+        # map of node_number to list of rounds for which timeout msg has been dropped
+        self.node_to_timeout_drop_rounds = dict()
+        # hashmap of sender:[list of sender’s commit]
+        self.commit_config = dict()
+        self.done_flag = False    # done_flag is set true when scenario_executor says it’s done
         self.livenessFlag = False    # livenessFlag indicates if liveness has been upheld
-
-
 
     ##################   Helper functions   ##################
 

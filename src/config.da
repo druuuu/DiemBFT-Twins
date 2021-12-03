@@ -99,7 +99,8 @@ configs = {
         'failure_config': FailureConfig(
             failures=[],
             seed=637713655
-        )
+        ),
+        "quorum_size": 3
     },
 
     2: {
@@ -115,7 +116,8 @@ configs = {
         'failure_config': FailureConfig(
             failures=[],
             seed=637713655
-        )
+        ),
+        "quorum_size": 2
     },
 
     3: {

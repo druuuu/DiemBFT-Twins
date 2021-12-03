@@ -63,13 +63,13 @@ class ScenarioExecutor(process):
         ''' Setup validators '''
         for personal_id, validator in enumerate(validators):
             setup(validator, (self.config, self.config_id, self.scenario, self.scenario_id, personal_id, list(validators), validator_private_keys[personal_id], validator_public_keys,
-                              leaders, networkPlayground, personal_id, self))
+                              leaders, networkPlayground, personal_id, self, self.config['quorum_size']))
 
         ''' Setup twins'''
         twins = new(Validator, num=nTwins)
         for personal_id, twin in enumerate(twins):
             setup(twin, (self.config, self.config_id, self.scenario, self.scenario_id, personal_id, list(validators), validator_private_keys[personal_id], validator_public_keys,
-                         leaders, networkPlayground, personal_id+nValidators, self))
+                         leaders, networkPlayground, personal_id+nValidators, self, self.config['quorum_size']))
             twin_to_node[personal_id+nValidators] = personal_id
             node_to_twin[personal_id] = personal_id+nValidators
             node_number_to_pid_mapping[personal_id+nValidators] = twin
@@ -105,10 +105,13 @@ class ScenarioExecutor(process):
         # Call Safety test on commit config
         if safety_test(commit_config):
             output("Safety Upheld")
+            LOGGER.log_action(
+                " ******************** Safety Upheld ******************** ", None)
         else:
             output("Safety Violated")
+            LOGGER.log_action(
+                " ******************** Safety Violated ******************** ", None)
 
-        LOGGER.log_action("Final ", commit_config)
         send(('Ask main to end',), to=parent())
 
         '''Exit scenario executor'''
@@ -164,6 +167,8 @@ def main():
 
     SCENARIOS_FILE = SCENARIOS_PATH+"config"+str(config_number)+".json"
 
+    # testcases file path
+    # SCENARIOS_FILE = SCENARIOS_PATH+"quorum_size_2f_config2.json"
     scenario_file = open(SCENARIOS_FILE)
     scenario_id = 0
     json_content = json.load(scenario_file)
