@@ -72,6 +72,7 @@ class Pacemaker:
                        self.last_round_tc, self.blocktree.high_commit_qc)
             # Broadcast the timeout message
             self.send_timeout_msg(timeout_msg)
+            self.start_timer(timeout_msg.tmo_info.round)
 
     '''Function process remote timeout(tmo)'''
 
