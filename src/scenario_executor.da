@@ -13,8 +13,10 @@ from pprint import pprint
 
 
 # SCENARIOS_FILE = "../scenarioconfig/config1.json"
-# SCENARIOS_PATH = "../scenarios/testcases/"
 SCENARIOS_PATH = "../scenarios/generated_scenarios/"
+# SCENARIOS_PATH = "../scenarios/testcases/"
+
+# SCENARIOS_PATH = ""
 
 
 class ScenarioExecutor(process):
@@ -77,7 +79,7 @@ class ScenarioExecutor(process):
 
         '''Setup Network Playground'''
         setup(networkPlayground, (self, nValidators, nTwins, self.scenario,
-                                  node_number_to_pid_mapping, pid_to_node_number_mapping, node_to_twin, twin_to_node, self.config_id, self.scenario_id))
+                                  node_number_to_pid_mapping, pid_to_node_number_mapping, node_to_twin, twin_to_node, self.config_id, self.scenario_id, self.config['liveness']))
 
         ''' Start Network Playground, Twins, Validators '''
         start(networkPlayground | twins | validators)
@@ -166,9 +168,10 @@ def main():
     # print(config)
 
     SCENARIOS_FILE = SCENARIOS_PATH+"config"+str(config_number)+".json"
-
+    # SCENARIOS_FILE = "scenarios8.json"
     # testcases file path
     # SCENARIOS_FILE = SCENARIOS_PATH+"quorum_size_2f_config2.json"
+
     scenario_file = open(SCENARIOS_FILE)
     scenario_id = 0
     json_content = json.load(scenario_file)

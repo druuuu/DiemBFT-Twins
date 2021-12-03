@@ -5,7 +5,7 @@ from logger_util import LOGGER
 
 
 class NetworkPlayground(process):
-    def setup(scenario_executor_pid, number_of_nodes: int, number_of_twins: int, scenario, node_number_to_pid_mapping, pid_to_node_number_mapping, node_to_twin, twin_to_node, config_id, scenario_id):
+    def setup(scenario_executor_pid, number_of_nodes: int, number_of_twins: int, scenario, node_number_to_pid_mapping, pid_to_node_number_mapping, node_to_twin, twin_to_node, config_id, scenario_id, liveness):
 
         # Setting up logger
         LOGGER.np = self
@@ -15,6 +15,7 @@ class NetworkPlayground(process):
             + '/scenario'+str(scenario_id)+'/' \
             + LOGGER.process_id + ".log"
 
+        self.liveness = liveness
         # hashmap mapping node(say 1) to its twin(say 5), as per our generated scenario design
         self.node_to_twin = node_to_twin
         # hashmap mapping twin(say 5) to its node(say 1), as per our generated scenario design
@@ -394,7 +395,7 @@ class NetworkPlayground(process):
                 self.livenessFlag = False
                 LOGGER.log_action('Set livenessFlag to:', self.livenessFlag)
 
-            elif timeout(30):
+            elif timeout(self.liveness):
                 send(('Stop Processes',), to=self.scenario_executor_pid)
                 LOGGER.log_action(" Timed out ", None)
                 LOGGER.log_np_event('Sent', 'Stop Processes',

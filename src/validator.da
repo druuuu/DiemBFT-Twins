@@ -22,7 +22,7 @@ class Validator (process):
               current_round), to=self.networkPlayground)
 
     def setup(config, config_id: int, scenario, scenario_id, validator_id: int, replicas: list,  private_key, public_keys_validators, leaders, networkPlayground, node_number, scenario_executor_pid, quorum_size):
-
+        output(node_number, " --- ", self)
         LOGGER.replicas = replicas
         # LOGGER.process_id = "validator_" + str(validator_id)
         LOGGER.process_id = "validator_" + str(node_number)
@@ -497,7 +497,8 @@ class Validator (process):
                     self.pacemaker.advance_round_tc(
                         next_round_proposal.last_round_tc)
 
-                    output("After sync up using QC")
+                    output("Synced up to round ",
+                           self.pacemaker.current_round, " using QC")
 
                     # self.blocktree.execute_and_insert(proposal_message.block)
 
@@ -515,8 +516,8 @@ class Validator (process):
                     self.pacemaker.advance_round_tc(
                         reqd_timeout_msg.last_round_tc)
                     self.pacemaker.advance_round_tc(reqd_tc)
-                    output("After sync up using TC")
-                output("After sync up", self.pacemaker.current_round)
+                    output("Synced up to round ",
+                           self.pacemaker.current_round, " using TC")
 
     def receive(msg=("kindly sync up", to_round), from_=np):
 
