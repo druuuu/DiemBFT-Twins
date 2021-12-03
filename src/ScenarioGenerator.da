@@ -132,7 +132,6 @@ class ScenarioGenerator:
             if with_replacement:
                 all_permutations = self.perm(
                     rounds, pruned_partition_with_leaders)
-                print("----------", len(all_permutations))
             else:
                 if rounds > len(pruned_partition_with_leaders):
                     print("INVALID CONFIG")
@@ -141,7 +140,6 @@ class ScenarioGenerator:
                     pruned_partition_with_leaders, rounds)
                 for x in all_permutations_object:
                     all_permutations.append(x)
-                print("**********", len(all_permutations))
 
             # prun from all permutations based on the type of pruning.
             if selection_type_for_configs_pruned == "RANDOM":
@@ -179,7 +177,7 @@ class ScenarioGenerator:
                 configs.append(scenario)
 
             # Write all generated scenarios to json file
-            config_name = "../scenarioconfig/config" + \
+            config_name = "../scenarios/generated_scenarios/config" + \
                 str(config_number) + ".json"
             with open(config_name, 'w') as f:
                 json_str = json.dumps(configs)
@@ -261,7 +259,7 @@ class ScenarioGenerator:
                 configs.append(scenario)
 
             # Write all generated scenarios to json file
-            config_name = "../scenarioconfig/config" + \
+            config_name = "../scenarios/generated_scenarios/config" + \
                 str(config_number) + ".json"
             with open(config_name, 'w') as f:
                 json_str = json.dumps(configs)

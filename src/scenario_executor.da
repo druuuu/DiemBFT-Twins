@@ -13,12 +13,14 @@ from pprint import pprint
 
 
 # SCENARIOS_FILE = "../scenarioconfig/config1.json"
-SCENARIOS_FILE = "scenarios7.json"
+# SCENARIOS_PATH = "../scenarios/testcases/"
+SCENARIOS_PATH = "../scenarios/generated_scenarios/"
 
 
 class ScenarioExecutor(process):
 
     def setup(config, config_id, scenario, scenario_id):
+        # pprint(config)
         LOGGER.scenario_executor = self
         LOGGER.process_id = "scenario_executor"
         LOGGER.filename = '../logs/config' + str(config_id) + '/' \
@@ -107,7 +109,6 @@ class ScenarioExecutor(process):
             output("Safety Violated")
 
         LOGGER.log_action("Final ", commit_config)
-
         send(('Ask main to end',), to=parent())
 
         '''Exit scenario executor'''
@@ -161,10 +162,11 @@ def main():
     os.makedirs('../ledgers/config' + str(config_number))
     # print(config)
 
+    SCENARIOS_FILE = SCENARIOS_PATH+"config"+str(config_number)+".json"
+
     scenario_file = open(SCENARIOS_FILE)
     scenario_id = 0
     json_content = json.load(scenario_file)
-
     for each_scenario in json_content:
         config = configs[config_number]
         config["nvalidators"] = each_scenario["number_of_nodes"]
@@ -181,9 +183,9 @@ def main():
         setup(scenario_executor, (config, config_number, each_scenario, scenario_id))
         start(scenario_executor)
 
-        # await(some(received(("Next scenario",), from_=scenario_executor)))
-        await(received(('Ask main to end',)))
-        output("88888888888888888")
+        # await(each(se in scenario_executor, has=received(('Ask main to end',), from_=se)))
+
+        await(received(('Ask main to end',), from_=scenario_executor))
+
         scenario_id += 1
-    config_id += 1
     exit()

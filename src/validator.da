@@ -22,7 +22,6 @@ class Validator (process):
               current_round), to=self.networkPlayground)
 
     def setup(config, config_id: int, scenario, scenario_id, validator_id: int, replicas: list,  private_key, public_keys_validators, leaders, networkPlayground, node_number, scenario_executor_pid):
-        output("Validator with id ", validator_id)
 
         LOGGER.replicas = replicas
         # LOGGER.process_id = "validator_" + str(validator_id)

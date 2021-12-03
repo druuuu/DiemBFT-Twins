@@ -1,93 +1,92 @@
 from object_types import FailType, Failure, FailureConfig, MsgType
 
 config_tests = {
-    1 : {
-            "number_of_nodes" : 4,
-            "number_of_twins" : 1,
-            "rounds" : 7,
-            "number_of_partition" : 3,
-            "leaders_only_faulty" : False,
-            "number_of_partitions_pruned" : 4,
-            "selection_type_for_partitions" : "RANDOM",
-            "number_of_partitions_leaders_pruned" : 7,
-            "selection_type_for_partitions_leaders_pruned" : "RANDOM",
-            "max_message_drops" : 1,
-            "number_of_configs_pruned" : 10,
-            "selection_type_for_configs_pruned" : "RANDOM",
-            "step3_paper_execution": True,
-            "with_replacement" : False,
-        },
-    2 : {
-            "number_of_nodes" : 4,
-            "number_of_twins" : 1,
-            "rounds" : 10,
-            "number_of_partition" : 3,
-            "leaders_only_faulty" : False,
-            "number_of_partitions_pruned" : 4,
-            "selection_type_for_partitions" : "RANDOM",
-            "number_of_partitions_leaders_pruned" : 4,
-            "selection_type_for_partitions_leaders_pruned" : "RANDOM",
-            "max_message_drops" : 1,
-            "number_of_configs_pruned" : 10,
-            "selection_type_for_configs_pruned" : "RANDOM",
-            "step3_paper_execution": True,
-            "with_replacement" : True,
+    1: {
+        "number_of_nodes": 4,
+        "number_of_twins": 1,
+        "rounds": 7,
+        "number_of_partition": 3,
+        "leaders_only_faulty": False,
+        "number_of_partitions_pruned": 4,
+        "selection_type_for_partitions": "RANDOM",
+        "number_of_partitions_leaders_pruned": 7,
+        "selection_type_for_partitions_leaders_pruned": "RANDOM",
+        "max_message_drops": 1,
+        "number_of_configs_pruned": 1,
+        "selection_type_for_configs_pruned": "RANDOM",
+        "step3_paper_execution": True,
+        "with_replacement": False,
     },
-    3 : {
-            "number_of_nodes" : 4,
-            "number_of_twins" : 1,
-            "rounds" : 7,
-            "number_of_partition" : 3,
-            "leaders_only_faulty" : True,
-            "number_of_partitions_pruned" : 4,
-            "selection_type_for_partitions" : "RANDOM",
-            "number_of_partitions_leaders_pruned" : 7,
-            "selection_type_for_partitions_leaders_pruned" : "RANDOM",
-            "max_message_drops" : 1,
-            "number_of_configs_pruned" : 10,
-            "selection_type_for_configs_pruned" : "RANDOM",
-            "step3_paper_execution": True,
-            "with_replacement" : False,
+    2: {
+        "number_of_nodes": 4,
+        "number_of_twins": 1,
+        "rounds": 10,
+        "number_of_partition": 3,
+        "leaders_only_faulty": False,
+        "number_of_partitions_pruned": 4,
+        "selection_type_for_partitions": "RANDOM",
+        "number_of_partitions_leaders_pruned": 4,
+        "selection_type_for_partitions_leaders_pruned": "RANDOM",
+        "max_message_drops": 1,
+        "number_of_configs_pruned": 1,
+        "selection_type_for_configs_pruned": "RANDOM",
+        "step3_paper_execution": True,
+        "with_replacement": True,
     },
-    4 : {
-            "number_of_nodes" : 7,
-            "number_of_twins" : 2,
-            "rounds" : 7,
-            "number_of_partition" : 3,
-            "leaders_only_faulty" : True,
-            "number_of_partitions_pruned" : 4,
-            "selection_type_for_partitions" : "RANDOM",
-            "number_of_partitions_leaders_pruned" : 7,
-            "selection_type_for_partitions_leaders_pruned" : "RANDOM",
-            "max_message_drops" : 1,
-            "number_of_configs_pruned" : 10,
-            "selection_type_for_configs_pruned" : "RANDOM",
-            "step3_paper_execution": True,
-            "with_replacement" : False,
-        },
-    
-    5 : {
-            "number_of_nodes" : 4,
-            "number_of_twins" : 1,
-            "rounds" : 10,
-            "number_of_partition" : 4,
-            "leaders_only_faulty" : True,
-            "number_of_partitions_pruned" : 4,
-            "selection_type_for_partitions" : "RANDOM",
-            "number_of_partitions_leaders_pruned" : 10,
-            "selection_type_for_partitions_leaders_pruned" : "RANDOM",
-            "max_message_drops" : 1,
-            "number_of_configs_pruned" : 10,
-            "selection_type_for_configs_pruned" : "RANDOM",
-            "step3_paper_execution": False,
-            "with_replacement" : False,
-        },
+    3: {
+        "number_of_nodes": 4,
+        "number_of_twins": 1,
+        "rounds": 7,
+        "number_of_partition": 3,
+        "leaders_only_faulty": True,
+        "number_of_partitions_pruned": 4,
+        "selection_type_for_partitions": "RANDOM",
+        "number_of_partitions_leaders_pruned": 7,
+        "selection_type_for_partitions_leaders_pruned": "RANDOM",
+        "max_message_drops": 1,
+        "number_of_configs_pruned": 1,
+        "selection_type_for_configs_pruned": "RANDOM",
+        "step3_paper_execution": True,
+        "with_replacement": False,
+    },
+    4: {
+        "number_of_nodes": 7,
+        "number_of_twins": 2,
+        "rounds": 7,
+        "number_of_partition": 3,
+        "leaders_only_faulty": True,
+        "number_of_partitions_pruned": 4,
+        "selection_type_for_partitions": "RANDOM",
+        "number_of_partitions_leaders_pruned": 7,
+        "selection_type_for_partitions_leaders_pruned": "RANDOM",
+        "max_message_drops": 1,
+        "number_of_configs_pruned": 1,
+        "selection_type_for_configs_pruned": "RANDOM",
+        "step3_paper_execution": True,
+        "with_replacement": False,
+    },
+
+    5: {
+        "number_of_nodes": 4,
+        "number_of_twins": 1,
+        "rounds": 10,
+        "number_of_partition": 4,
+        "leaders_only_faulty": True,
+        "number_of_partitions_pruned": 4,
+        "selection_type_for_partitions": "RANDOM",
+        "number_of_partitions_leaders_pruned": 10,
+        "selection_type_for_partitions_leaders_pruned": "RANDOM",
+        "max_message_drops": 1,
+        "number_of_configs_pruned": 1,
+        "selection_type_for_configs_pruned": "RANDOM",
+        "step3_paper_execution": False,
+        "with_replacement": False,
+    },
 }
 
 
-
 configs = {
-    1 : {
+    1: {
         'nvalidators': 4,
         'nfaulty': 1,
         'nclients': 3,
@@ -103,7 +102,7 @@ configs = {
         )
     },
 
-    2 : {
+    2: {
         'nvalidators': 4,
         'nfaulty': 1,
         'nclients': 3,
@@ -119,7 +118,7 @@ configs = {
         )
     },
 
-    3 : {
+    3: {
         'nvalidators': 4,
         'nfaulty': 1,
         'nclients': 3,
@@ -135,8 +134,8 @@ configs = {
         )
     },
 
-    
-    4 : {
+
+    4: {
         'nvalidators': 4,
         'nfaulty': 1,
         'nclients': 3,
@@ -152,7 +151,7 @@ configs = {
         )
     },
 
-    5 : {
+    5: {
         'nvalidators': 4,
         'nfaulty': 1,
         'nclients': 3,
@@ -169,40 +168,6 @@ configs = {
     }
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # {
