@@ -120,8 +120,11 @@ class NetworkPlayground(process):
 
     ##########################################################
 
+
+
     ##################   Receive Handlers   ##################
 
+    ''' Receive handler for proposal messages '''
     def receive(msg=('Proposal', proposal_msg), from_=msg_sender):
         msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
         msg_round = self.get_msg_round(proposal_msg, MsgType.Proposal)
@@ -135,7 +138,6 @@ class NetworkPlayground(process):
             LOGGER.log_event('Sent', 'Quit Process', {},
                              self.scenario_executor_pid)
             send(('Stop Processes',), to=self.scenario_executor_pid)
-
             return
 
         destination_nodes = set()
@@ -151,6 +153,7 @@ class NetworkPlayground(process):
                     destination_nodes.add(node_number)
 
         else:
+            ''' When msg_round <= rounds, create partitions according to the scenario '''
             # get index of partition in which msg_sender lies
             msg_partition_idx = self.get_current_partition_index(
                 msg_round, msg_sender_number)
@@ -164,7 +167,6 @@ class NetworkPlayground(process):
                                     destination_nodes, msg_round, proposal_msg)
                 return
 
-            ''' When msg_round <= rounds, create partitions according to the scenario '''
             partition = self.get_partition_at_idx(
                 msg_partition_idx, msg_round, msg_sender)
 
@@ -183,6 +185,8 @@ class NetworkPlayground(process):
             self.send_to_nodes('Proposal', destination_nodes,
                                proposal_msg, actual_sender_node)
 
+
+    ''' Receive handler for vote messages '''
     def receive(msg=('Vote', vote_msg, destination_node_num), from_=msg_sender):
 
         msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
@@ -212,6 +216,7 @@ class NetworkPlayground(process):
                 destination_nodes.add(self.get_twin(destination_node_num))
 
         else:
+            ''' When msg_round <= rounds, create partitions according to the scenario '''
 
             # get index of partition in which msg_sender lies
             msg_partition_idx = self.get_current_partition_index(
@@ -225,7 +230,6 @@ class NetworkPlayground(process):
                                     destination_nodes, msg_round, vote_msg)
                 return
 
-            ''' When msg_round <= rounds, create partitions according to the scenario '''
             partition = self.get_partition_at_idx(
                 msg_partition_idx, msg_round, msg_sender)
 
@@ -247,6 +251,8 @@ class NetworkPlayground(process):
             self.send_to_nodes('Vote', destination_nodes,
                                vote_msg, actual_sender_node)
 
+
+    ''' Receive handler for timeout messages '''
     def receive(msg=('Timeout', timeout_msg), from_=msg_sender):
 
         msg_sender_number = self.pid_to_node_number_mapping[msg_sender]
@@ -265,7 +271,7 @@ class NetworkPlayground(process):
             return
 
         destination_nodes = set()
-
+        ''' When current round is after self.rounds, there is only one partition with all the nodes '''
         if msg_round > self.rounds:
             # no notion of partitions in this round, i.e. all nodes present in the same partition
             partitions_in_round = self.get_partitions_in_round(msg_round)
@@ -276,6 +282,7 @@ class NetworkPlayground(process):
                     destination_nodes.add(node_number)
 
         else:
+            ''' When msg_round <= rounds, create partitions according to the scenario '''
             # get index of partition in which msg_sender lies ---  using get_current_partition_index
             msg_partition_idx = self.get_current_partition_index(
                 msg_round, msg_sender_number)
@@ -288,7 +295,6 @@ class NetworkPlayground(process):
                                     destination_nodes, msg_round, timeout_msg)
                 return
 
-            ''' When msg_round <= rounds, create partitions according to the scenario '''
             partition = self.get_partition_at_idx(
                 msg_partition_idx, msg_round, msg_sender)
             # output(msg_sender_number, partition, msg_round)
