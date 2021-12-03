@@ -97,6 +97,7 @@ class ScenarioExecutor(process):
 
         await(self.doneFlag)
 
+    ''' Receive handler for "forward commit config msg" from NetworkPlayground '''
     def receive(msg=("forward commit config", commit_config), from_=np):
         LOGGER.log_event('RECEIVED', ' Commit Config',
                          commit_config, np)
@@ -111,9 +112,10 @@ class ScenarioExecutor(process):
         LOGGER.log_action("Final ", commit_config)
         send(('Ask main to end',), to=parent())
 
-        '''Exit scenario executor'''
+        ''' Exit scenario executor '''
         exit()
 
+    ''' Function to test safety of system based on commit_config at the end '''
     def safety_test(commit_config):
         number_of_ledgers = len(commit_config)
         max_rounds = -1
@@ -131,6 +133,7 @@ class ScenarioExecutor(process):
         return True
 
 
+''' Function to check validity of config '''
 def is_config_valid(config):
     if int(config['nvalidators']) < (3 * int(config['nfaulty']) + 1):
         LOGGER.log_action(
