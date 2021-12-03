@@ -7,7 +7,7 @@ from object_types import TC, TimeoutMsg
 
 class Pacemaker:
 
-    def __init__(self, validator_id, replicas, blocktree, safety, nfaulty, delta, send_timeout_msg, requestSyncUp):
+    def __init__(self, validator_id, replicas, blocktree, safety, nfaulty, delta, send_timeout_msg, requestSyncUp, quorum_size):
         '''current round; // Initially zero
         last round tc; // Initially ⊥
         pending timeouts ; // Timeouts per rounda'''
@@ -29,6 +29,7 @@ class Pacemaker:
         self.replicas = replicas
         self.send_timeout_msg = send_timeout_msg
         self.requestSyncUp = requestSyncUp
+        self.quorum_size = quorum_size
     '''Function get round timer(r)'''
 
     def get_round_timer(self, r):
@@ -109,7 +110,7 @@ class Pacemaker:
             self.local_timeout_round()  # Bracha timeout
 
         '''if |pending timeouts[tmo info.round].senders| == 2f + 1 then'''
-        if len(self.tmo_senders[tmo_info.round]) == 2*self.f + 1:
+        if len(self.tmo_senders[tmo_info.round]) == self.quorum_size:
             tmo_high_qc_rounds = []
             for t in self.pending_timeouts[tmo_info.round]:
                 if t.high_qc != None:
