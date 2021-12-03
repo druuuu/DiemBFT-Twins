@@ -22,7 +22,7 @@ SCENARIOS_PATH = "../scenarios/generated_scenarios/"
 class ScenarioExecutor(process):
 
     def setup(config, config_id, scenario, scenario_id):
-        # pprint(config)
+        pprint(config)
         LOGGER.scenario_executor = self
         LOGGER.process_id = "scenario_executor"
         LOGGER.filename = '../logs/config' + str(config_id) + '/' \
@@ -139,6 +139,8 @@ class ScenarioExecutor(process):
 
 
 ''' Function to check validity of config '''
+
+
 def is_config_valid(config):
     if int(config['nvalidators']) < (3 * int(config['nfaulty']) + 1):
         LOGGER.log_action(
