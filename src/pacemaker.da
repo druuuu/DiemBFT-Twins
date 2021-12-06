@@ -2,11 +2,12 @@ import threading
 
 from logger_util import LOGGER
 from object_types import TC, TimeoutMsg
+# from validator import Validator
 
 
 class Pacemaker:
 
-    def __init__(self, validator_id, replicas, blocktree, safety, nfaulty, delta, send_timeout_msg):
+    def __init__(self, validator_id, replicas, blocktree, safety, nfaulty, delta, send_timeout_msg, requestSyncUp, quorum_size):
         '''current round; // Initially zero
         last round tc; // Initially ⊥
         pending timeouts ; // Timeouts per rounda'''
@@ -27,7 +28,8 @@ class Pacemaker:
         self.safety = safety
         self.replicas = replicas
         self.send_timeout_msg = send_timeout_msg
-
+        self.requestSyncUp = requestSyncUp
+        self.quorum_size = quorum_size
     '''Function get round timer(r)'''
 
     def get_round_timer(self, r):
@@ -71,6 +73,7 @@ class Pacemaker:
                        self.last_round_tc, self.blocktree.high_commit_qc)
             # Broadcast the timeout message
             self.send_timeout_msg(timeout_msg)
+            self.start_timer(timeout_msg.tmo_info.round)
 
     '''Function process remote timeout(tmo)'''
 
@@ -80,10 +83,10 @@ class Pacemaker:
         tmo_info = tmo.tmo_info
         '''if tmo info.round < current round then
             return ⊥'''
+
         if tmo_info.round < self.current_round:
             LOGGER.log('Pacemaker: process_remote_timeout: returns', None)
             return None
-
         '''if tmo info.sender 6∈ pending timeouts[tmo info.round].senders then
             pending timeouts[tmo info.round] ← pending timeouts[tmo info.round] ∪ {tmo info}'''
         if tmo_info.round not in self.pending_timeouts:
@@ -107,7 +110,7 @@ class Pacemaker:
             self.local_timeout_round()  # Bracha timeout
 
         '''if |pending timeouts[tmo info.round].senders| == 2f + 1 then'''
-        if len(self.tmo_senders[tmo_info.round]) == 2*self.f + 1:
+        if len(self.tmo_senders[tmo_info.round]) == self.quorum_size:
             tmo_high_qc_rounds = []
             for t in self.pending_timeouts[tmo_info.round]:
                 if t.high_qc != None:
@@ -136,8 +139,13 @@ class Pacemaker:
             LOGGER.log('Pacemaker: advance_round_tc: returns', False)
             return False
         '''last round tc ← tc'''
+
         self.last_round_tc = tc
         '''start timer(tc.round + 1)'''
+        # if tc.round > self.current_round:
+        #     print("=================================-")
+        #     self.requestSyncUp(self.current_round, tc.round)
+        # print(self.validator_id, " advancing due to Tc")
         self.start_timer(tc.round + 1)
         LOGGER.log_action('Advancing to round due to TC', self.current_round)
         '''return true'''
@@ -158,6 +166,12 @@ class Pacemaker:
         '''last round tc ← ⊥'''
         self.last_round_tc = None
         '''start timer(qc.vote info.round + 1)'''
+
+        # if qc.vote_info.round >= self.current_round:
+        #     print("==================================")
+        #     self.requestSyncUp(self.current_round, qc.vote_info.round)
+        # print(self.validator_id, " advancing due to QC")
+
         self.start_timer(qc.vote_info.round + 1)
         LOGGER.log_action('Advancing to round due to QC', self.current_round)
         '''return true'''

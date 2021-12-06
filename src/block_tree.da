@@ -5,7 +5,7 @@ from utils import get_qc_with_max_round
 
 
 class BlockTree:
-    def __init__(self, validator_id, replicas, ledger, nfaulty, id_block):
+    def __init__(self, validator_id, replicas, ledger, nfaulty, id_block, quorum_size):
         '''
         pending block tree; // tree of blocks pending commitment
         pending votes; // collected votes per block indexed by their LedgerInfo hash
@@ -24,13 +24,15 @@ class BlockTree:
         self.ledger = ledger
         self.f = nfaulty
         self.id_block = id_block
-
+        self.quorum_size = quorum_size
     '''Procedure execute and insert(b)'''
     # This function inserts the given block into the Ledger's speculate tree and also into pending block tree as well
 
     def execute_and_insert(self, block):
         LOGGER.log('BlockTree: execute_and_insert', block)
         self.id_block[block.id] = block
+        # if self.validator_id == 2 or self.validator_id == 3:
+        #     print(self.validator_id, "---> ", block.round)
         if block.qc is None:
             # print("if")
             '''Ledger.speculate(b.qc.block id, b.id, b.payload)'''
@@ -108,9 +110,9 @@ class BlockTree:
         else:
             self.pending_votes[vote_idx] = [vote_msg.signature]
             self.pending_signers[vote_idx] = [vote_msg.sender]
-
+            # print(len(self.pending_votes[vote_idx]))
         '''if |pending votes[vote idx]| = 2f + 1 then'''
-        if len(self.pending_votes[vote_idx]) == 2*self.f + 1:
+        if len(self.pending_votes[vote_idx]) == self.quorum_size:
 
             '''qc ←QC h
                 vote info ← v.vote info,
@@ -138,6 +140,8 @@ class BlockTree:
         LOGGER.log('BlockTree: process_qc', qc)
         '''if qc.ledger commit info.commit state id 6= ⊥ then'''
         if qc is not None and qc.ledger_commit_info.commit_state_id != None:
+
+            # if qc and qc.vote_info and qc.vote_info.round and qc.vote_info.parent_round and qc.vote_info.round - 1 == qc.vote_info.parent_round:
             '''Ledger.commit(qc.vote info.parent id)'''
             self.ledger.commit(qc.vote_info.parent_id)
             '''pending block tree.prune(qc.vote info.parent id) 
@@ -178,6 +182,10 @@ class BlockTree:
             '''high commit qc ← maxround{qc, high commit qc}'''
             self.high_commit_qc = get_qc_with_max_round(
                 qc, self.high_commit_qc)
+        # else:
+        #     print("Emptying self.id_block ", qc)
+        #     self.id_block = dict()
+
         '''high qc ← maxround{qc, high qc}'''
         self.high_qc = get_qc_with_max_round(qc, self.high_qc)
         LOGGER.log('BlockTree: process_qc ends', qc)
